@@ -4,7 +4,7 @@ This folder contains password files used by `resticprofile` for repository acces
 
 ✅ Each file stores the encryption password for a specific profile.
 
-📌 File naming is configured via `00_default.yaml`:
+📌 File naming is configured via `01_default_repo.yaml`:
 `<user>_<profile>.txt`
 
 - Used by `resticprofile` when `password-file` is set in the profile configuration.

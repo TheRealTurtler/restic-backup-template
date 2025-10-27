@@ -13,6 +13,7 @@ This is where all backup profiles are defined. Each file describes a specific ba
 
 - Supported formats: `.yaml`, `.toml`, `.hcl`, or `.json`
 - `00_default.yaml` – base configuration inherited by all other profiles
+- `01_default_repo.yaml` - repository and password settings
 - `global.yaml` – global configuration not tied to any specific profile
 - `userdata.yaml` – predefined profile for backing up the user directory
 - `zz_groups.yaml` – defines profile groups (e.g. for `full-backup` to run multiple profiles at once)

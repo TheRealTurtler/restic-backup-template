@@ -1,18 +1,9 @@
-# Declare Variables
-# CAUTION: These WILL be evaluated even if commented out
-# TODO: Would be better in a separate file
-#{{ $user_name := "user" }}
-
 # Default profile when not specified on the command line (-n or --name)
 # There's no default inheritance from the 'default' profile,
 # you can use the 'inherit' flag if needed
 default:
   # Don't Initialize repository if missing
   initialize: false
-
-  # Repository and password file
-  repository: "local:{{ .ConfigDir }}/../test/backup/{{ $user_name }}/{{ .Profile.Name }}"
-  password-file: "{{ .ConfigDir }}/../secrets/{{ $user_name }}_{{ .Profile.Name }}.secret"
 
   # Lock-file
   lock: "{{ .ConfigDir }}/../lock/resticprofile_{{ .Profile.Name }}.lock"
