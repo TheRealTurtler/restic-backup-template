@@ -36,13 +36,24 @@ This repository provides a portable, team-safe backup setup using [restic](https
   ```
   .\generate-password.ps1
   ```
+  This uses [`System.Security.Cryptography.RandomNumberGenerator`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator) for secure randomness.
 
-> ⚠️ **IMPORTANT: Backup Your `.secret` File**
->
-> The `.secret` file contains the encryption password for your restic repository.
-> If this file is lost, **you will not be able to access or restore your backups**.
-> restic cannot decrypt the repository without the exact password.
-> Always store this file in a secure, separate location outside your backup targets.
+<div style="border: 2px solid #f44336; padding: 1em; border-radius: 6px; background-color: #fff0f0;">
+
+### ⚠️ Critical: Backup Your `.secret` File
+
+**This file contains the encryption password for your restic repository.**
+
+If it is lost, **you will permanently lose access to your backups**.
+restic cannot decrypt the repository without the exact password.
+
+✅ Always store this file in a **secure, separate location** — outside your backup targets and version control.
+
+📁 Example:
+Store it on a USB stick, password manager, or encrypted vault that is not part of the backup set.
+
+</div>
+
 
 ## 👤 User Configuration
 
