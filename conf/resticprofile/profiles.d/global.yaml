@@ -1,14 +1,3 @@
-#:schema https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
-
-# Config veriosn of resticprofile
-version: "1"
-
-# Includes for other configuration files
-includes:
-  - "conf/resticprofile/conf.d/*.conf"
-  - "conf/resticprofile/profiles.d/*.yaml"
-  - "conf/resticprofile/profiles.d/*.toml"
-
 global:
   # Default command when just running "resticprofile"
   default-command: "profiles"

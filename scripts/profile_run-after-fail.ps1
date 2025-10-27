@@ -3,8 +3,8 @@ param (
     [string]$OS,
     [string]$Arch,
     [string]$CurrentDir,
-    [string]$ConfigDir,
-    [string]$BinaryDir
+    [string]$BinaryDir,
+	[string]$ConfigDir
 )
 
 $ProfileName   = $env:PROFILE_NAME
@@ -25,8 +25,8 @@ $message += ("  Hostname      : {0}" -f $Hostname)
 $message += ("  OS            : {0}" -f $OS)
 $message += ("  Arch          : {0}" -f $Arch)
 $message += ("  Current Dir   : {0}" -f $CurrentDir)
-$message += ("  Config Dir    : {0}" -f $ConfigDir)
 $message += ("  Binary Dir    : {0}" -f $BinaryDir)
+$message += ("  Config Dir    : {0}" -f $ConfigDir)
 $message += ("  Profile       : {0}" -f $ProfileName)
 $message += ("  Command       : {0}" -f $Command)
 $message += ("  Exit Code     : {0}" -f $ExitCode)

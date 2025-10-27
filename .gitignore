@@ -1,7 +1,5 @@
-# Ignore all .exe files in bin/
-bin/*.exe
-
 # Ignore everything in these folders
+bin/*
 cache/*
 lock/*
 log/*
@@ -9,6 +7,9 @@ secrets/*
 
 # Re-include all README.md files anywhere
 !**/README.md
+
+# Re-include profiles.yaml
+!bin/profiles.yaml
 
 # Ignore the entire test/ folder
 test/
