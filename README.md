@@ -50,7 +50,6 @@ restic cannot decrypt the repository without the exact password.
 📁 *Example:*
 Store it on a USB stick, password manager, or encrypted vault that is not part of the backup set.
 
-
 ## 👤 User Configuration
 
 - A default profile named `userdata` is included.
@@ -68,6 +67,30 @@ Store it on a USB stick, password manager, or encrypted vault that is not part o
   ```
 
   Replace `"user"` with your actual username.
+
+## 🗂️ Running a Backup with a Profile
+
+Once your profile is configured, you can start a backup using:
+
+```
+.\bin\resticprofile.exe --name "profilename" backup
+```
+
+🔧 Replace `"profilename"` with the name of your profile, for example:
+
+```
+.\bin\resticprofile.exe --name "userdata" backup
+```
+
+This command uses the configuration from:
+
+```
+conf\resticprofile\profiles.d\userdata.yaml
+```
+
+and backs up the directories defined in that profile to the associated restic repository.
+
+✅ Make sure the `.secret` file for the profile exists and is correctly named (e.g. `alice_userdata.secret`) so authentication works as expected.
 
 ## ✅ Features
 
