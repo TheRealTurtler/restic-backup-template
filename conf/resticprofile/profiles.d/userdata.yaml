@@ -9,7 +9,7 @@ userdata:
       - '{{ .Env.USERPROFILE }}\'
 
     # Excluded directories
-    exclude:
+    iexclude:
       - '{{ .Env.USERPROFILE }}\AppData'
       - '{{ .Env.USERPROFILE }}\Dropbox'
       - '{{ .Env.USERPROFILE }}\Google Drive'
@@ -21,6 +21,7 @@ userdata:
 
       - '{{ .Env.USERPROFILE }}\Downloads'
       - '{{ .Env.USERPROFILE }}\Videos'
+      - '{{ .Env.USERPROFILE }}\resticprofile'
 
     # Tags
     tag:
