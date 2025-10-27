@@ -1,0 +1,27 @@
+test:
+  inherit: "default"
+
+  initialize: true
+
+  backup:
+    # Base path for all entries in 'source'
+    #source-base:
+
+    # Backup directories
+    source:
+      - 'C:\Restic\test\data'
+
+    iexclude:
+      - "Downloads"
+
+    # Tags
+    tag:
+      - "{{ .Profile.Name }}"
+      - "{{ .OS }}"
+
+    # Execute weekly
+    # schedule: "weekly"
+
+  check:
+    # Execute daily
+    # schedule: "daily"

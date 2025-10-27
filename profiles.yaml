@@ -1,0 +1,34 @@
+#:schema https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+
+# Config veriosn of resticprofile
+version: "1"
+
+# Includes for other configuration files
+includes:
+  - "conf/resticprofile/conf.d/*.conf"
+  - "conf/resticprofile/profiles.d/*.yaml"
+  - "conf/resticprofile/profiles.d/*.toml"
+
+global:
+  # Default command when just running "resticprofile"
+  default-command: "profiles"
+
+  # Initialize a repository if none exist at location
+  initialize: false
+
+  # Process priority
+  priority: "low"
+
+  # Disk I/O priority
+  ionice: true
+  # Class 1: realtime, 2: best-effort, 3: idle
+  ionice-class: 2
+  # Set lower priority, range: 0 (highest) - 7 (lowest)
+  ionice-level: 6
+
+  # Resticprofile won't start a profile if there's less than 100MB of RAM available
+  min-memory: 100
+
+  # Restic lock management (NOT resticprofile locks!)
+  restic-stale-lock-age: "2h"
+  restic-lock-retry-after: "1m"

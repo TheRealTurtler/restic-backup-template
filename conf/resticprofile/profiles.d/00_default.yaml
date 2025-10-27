@@ -1,0 +1,131 @@
+# Declare Variables
+# CAUTION: These WILL be evaluated even if commented out
+# TODO: Would be better in a separate file
+#{{ $user_name := "user" }}
+
+# Default profile when not specified on the command line (-n or --name)
+# There's no default inheritance from the 'default' profile,
+# you can use the 'inherit' flag if needed
+default:
+  # Environment variables
+  # NOTE: These are only set for any child process, not resticprofile itself
+  # -> Therefore these cannot be used within profile configs
+  env:
+    RCLONE_CONFIG: "{{ .BinaryDir }}/../conf/rclone/rclone.conf"
+
+  # Don't Initialize repository if missing
+  initialize: false
+
+  # Repository and password file
+  repository: "local:{{ .BinaryDir }}/../test/backup/{{ $user_name }}/{{ .Profile.Name }}"
+  password-file: "{{ .BinaryDir }}/../secrets/{{ $user_name }}_{{ .Profile.Name }}.secret"
+
+  # Lock-file
+  lock: "{{ .BinaryDir }}/../lock/resticprofile_{{ .Profile.Name }}.lock"
+  force-inactive-lock: true
+
+  # Remove old cache directories
+  cache-cleanup: true
+  # Set cache directory
+  cache-dir: "{{ .BinaryDir }}/../cache"
+
+  # Print error summary when any command fails
+  run-after-fail:
+    - >
+      powershell -ExecutionPolicy Bypass -File {{ .BinaryDir }}/../scripts/profile_run-after-fail.ps1
+      {{ .Hostname }}
+      {{ .OS }}
+      {{ .Arch }}
+      {{ .CurrentDir }}
+      {{ .ConfigDir }}
+      {{ .BinaryDir }}
+
+  # Backup command
+  backup:
+    # Show more log data
+    verbose: true
+    # Exclude cache directories
+    exclude-caches: true
+
+    # Schedule settings
+    # -> To enable scheduled backups set interval with "schedule"
+    schedule-permission: "system"
+    schedule-priority: "background"
+    schedule-log: "{{ .BinaryDir }}/../log/resticprofile/schedule_{{ .Profile.Name }}_backup.log"
+    schedule-lock-mode: "default"
+    schedule-lock-wait: "2h"
+    schedule-after-network-online: true
+
+    # Check repository after succesfull backup
+    check-after: true
+
+    # Send e-mail when backup fails
+    run-after-fail:
+      - >
+        powershell -ExecutionPolicy Bypass -File {{ .BinaryDir }}/../scripts/backup_run-after-fail.ps1
+        {{ .Hostname }}
+        {{ .OS }}
+        {{ .Arch }}
+        {{ .CurrentDir }}
+        {{ .ConfigDir }}
+        {{ .BinaryDir }}
+
+  # Check command
+  check:
+    # Read data and not just metadata
+    read-data: true
+
+    # Schedule settings
+    # -> To enable scheduled backups set interval with "schedule"
+    schedule-permission: "system"
+    schedule-priority: "background"
+    schedule-log: "{{ .BinaryDir }}/../log/resticprofile/schedule_{{ .Profile.Name }}_check.log"
+    schedule-lock-mode: "default"
+    schedule-lock-wait: "2h"
+    schedule-after-network-online: true
+
+  # Retention Policy
+  # Retention is a special section that runs the "forget" command automatically before/after a backup
+  # This can NOT be run manually!
+  retention:
+    before-backup: false
+    after-backup: true
+
+    # Never delete snapshots with these tags
+    keep-tag:
+      - "forever"
+
+    keep-daily: 1
+    keep-hourly: 1
+    keep-weekly: 1
+    keep-monthly: 3
+    keep-within: "3h"
+
+    # Only delete snapshots from this host
+    host: true
+    # Only delete snapshots with tags specified in backup
+    tags: true
+
+    # Automatically run "prune" if snapshots were removed
+    prune: true
+
+  # Forget is used to delete snapshots that don't fit the specified policy
+  # This can be run manually
+  forget:
+    # Never delete snapshots with these tags
+    keep-tag:
+      - "forever"
+
+    keep-daily: 1
+    keep-hourly: 1
+    keep-weekly: 1
+    keep-monthly: 3
+    keep-within: "3h"
+
+    # Only delete snapshots from this host
+    host: true
+    # Only delete snapshots with tags specified in backup
+    tags: true
+
+    # Automatically run "prune" if snapshots were removed
+    prune: true

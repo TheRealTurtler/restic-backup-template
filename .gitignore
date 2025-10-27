@@ -1,0 +1,14 @@
+# Ignore all .exe files in bin/
+bin/*.exe
+
+# Ignore everything in these folders
+cache/*
+lock/*
+log/*
+secrets/*
+
+# Re-include all README.md files anywhere
+!**/README.md
+
+# Ignore the entire test/ folder
+test/

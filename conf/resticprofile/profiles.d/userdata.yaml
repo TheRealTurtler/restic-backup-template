@@ -1,0 +1,35 @@
+userdata:
+  inherit: "default"
+
+  initialize: true
+
+  backup:
+    # Backup directories
+    source:
+      - '{{ .Env.USERPROFILE }}\'
+
+    # Excluded directories
+    exclude:
+      - '{{ .Env.USERPROFILE }}\AppData'
+      - '{{ .Env.USERPROFILE }}\Dropbox'
+      - '{{ .Env.USERPROFILE }}\Google Drive'
+      - '{{ .Env.USERPROFILE }}\Nextcloud'
+      - '{{ .Env.USERPROFILE }}\OneDrive'
+
+      # TODO: Die ganzen Ordner mit . sind eigentlich auch egal
+      - '{{ .Env.USERPROFILE }}\.cache'
+
+      - '{{ .Env.USERPROFILE }}\Downloads'
+      - '{{ .Env.USERPROFILE }}\Videos'
+
+    # Tags
+    tag:
+      - "{{ .Profile.Name }}"
+      - "{{ .OS }}"
+
+    # Execute weekly
+    # schedule: "weekly"
+
+  check:
+    # Execute daily
+    # schedule: "daily"
