@@ -10,18 +10,26 @@ userdata:
 
     # Excluded directories
     iexclude:
+      # Usually we don't want to backup ourself
+      - "{{ .ConfigDir }}/.."
+
+      # Let's be real, no one cleans the download folder
+      - '{{ .Env.USERPROFILE }}\Downloads'
+
+      # AppData contains A LOT of useless data
+      # If at all only specific subfolders should be included
       - '{{ .Env.USERPROFILE }}\AppData'
+
+      # Any Cloud service folders do not need to be included
+      # These files already reside in the cloud and usually don't have to be included in a backup of local files
       - '{{ .Env.USERPROFILE }}\Dropbox'
       - '{{ .Env.USERPROFILE }}\Google Drive'
       - '{{ .Env.USERPROFILE }}\Nextcloud'
       - '{{ .Env.USERPROFILE }}\OneDrive'
 
-      # TODO: Die ganzen Ordner mit . sind eigentlich auch egal
+      # TODO: Some shitty applications think Windows = Linux and they can spam the user folder with "." folders
+      # This is data that should be stored in AppData and should therefore be excluded
       - '{{ .Env.USERPROFILE }}\.cache'
-
-      - '{{ .Env.USERPROFILE }}\Downloads'
-      - '{{ .Env.USERPROFILE }}\Videos'
-      - '{{ .Env.USERPROFILE }}\resticprofile'
 
     # Tags
     tag:
