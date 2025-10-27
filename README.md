@@ -1,71 +1,76 @@
-# 🛡️ Restic Backup Template for Windows
+# 🛡️ restic Backup Template for Windows
 
-This repository provides a portable, team-safe backup setup using [Restic](https://github.com/restic/restic) and [resticprofile](https://github.com/creativeprojects/resticprofile). It’s designed for clarity, maintainability, and zero hidden dependencies — just unzip and go!
+This repository provides a portable, team-safe backup setup using [restic](https://github.com/restic/restic) and [resticprofile](https://github.com/creativeprojects/resticprofile). It is built for clarity, portability and zero hidden dependencies. Simply unzip, configure and run.
 
 ## 📦 Quick Start
 
-1. **Download the ZIP**  
-   Grab this repository as a ZIP file and extract it to:  
+1. **Download the ZIP**
+   Extract this repository to your user folder, for example:
    ```
-   C:\Restic
+   C:\Users\Alice\resticprofile
    ```
 
-2. **Run the Setup Script**  
-   Launch PowerShell and execute:  
+2. **Run the Setup Script**
+   Launch PowerShell and execute:
    ```
    .\update-binaries.ps1
-   ```  
-   This downloads the latest versions of Restic and resticprofile into `bin/`.
-
-## 🔐 Secrets & Passwords
-
-- Repository passwords are stored in the:
    ```
-   secrets\
+   This downloads the latest versions of restic and resticprofile into:
    ```
-- File naming convention:  
-   ```
-   user_profilename.secret
-   ```  
-  Example:  
-   ```
-   michael_userdata.secret
+   bin\
    ```
 
-- To generate a new cryptographically strong password, run:  
-   ```
-   .\generate-password.ps1
-   ```  
-   This uses [`System.Security.Cryptography.RandomNumberGenerator`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator) for secure randomness.
+## 🔐 Secrets and Passwords
+
+- Repository passwords are stored in:
+  ```
+  secrets\
+  ```
+
+- File naming convention:
+  ```
+  alice_userdata.secret
+  ```
+
+- To generate a new cryptographically strong password, run:
+  ```
+  .\generate-password.ps1
+  ```
+
+> ⚠️ **IMPORTANT: Backup Your `.secret` File**
+>
+> The `.secret` file contains the encryption password for your restic repository.
+> If this file is lost, **you will not be able to access or restore your backups**.
+> restic cannot decrypt the repository without the exact password.
+> Always store this file in a secure, separate location outside your backup targets.
 
 ## 👤 User Configuration
 
-- A default profile named `userdata` is already included.
-- To activate it, set your username in:  
-   ```
-   conf\resticprofile\profiles.d\00_default.yaml
-   ```  
+- A default profile named `userdata` is included.
+- Username configuration is only needed if this template is used across multiple PCs or users.
+  This allows each user's password file to be stored and backed up independently.
+
+- To set your username, edit:
+  ```
+  conf\resticprofile\profiles.d\00_default.yaml
+  ```
+
   Modify the following line:
-   ```yaml
-   #{{ $user_name := "user" }}
-   ```  
+  ```yaml
+  #{{ $user_name := "user" }}
+  ```
+
   Replace `"user"` with your actual username.
 
 ## ✅ Features
 
-- 🪟 Windows-only setup (for now)  
-- 🔧 Portable, file-based configuration — no registry or credential manager required  
-- 📁 Predefined user profile for quick onboarding  
-- 🔐 Secure password handling via `.secret` files  
-- 🧠 Explicit, maintainable structure for teams  
+- Windows-only (for now)
+- Portable, file-based configuration (no registry, no credential manager)
+- Predefined user profile for quick onboarding
+- Easy-to-backup password files (`.secret`)
+- Clear folder and config layout for team use and version control
 
 ## 📚 Repositories Used
 
-- [Restic](https://github.com/restic/restic) – Fast, secure, efficient backup program  
-- [resticprofile](https://github.com/creativeprojects/resticprofile) – Profile-based wrapper for Restic
-
-## 💬 Notes
-
-- All paths and config files are designed for portability and clarity.  
-- No secrets are ever stored in code or version control.  
-- YAML quoting and path handling are cross-platform safe (forward slashes, explicit quoting).
+- [restic](https://github.com/restic/restic) – backup engine
+- [resticprofile](https://github.com/creativeprojects/resticprofile) – profile-based wrapper
