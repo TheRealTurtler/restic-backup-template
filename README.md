@@ -5,9 +5,9 @@ This repository provides a portable, team-safe backup setup using [restic](https
 ## 📦 Quick Start
 
 1. **Download the ZIP**
-   Extract this repository to your user folder, for example:
+   Extract this repository to any folder, for example:
    ```
-   C:\Users\Alice\resticprofile
+   C:\Tools\restic\
    ```
 
 2. **Run the Setup Script**
@@ -38,21 +38,17 @@ This repository provides a portable, team-safe backup setup using [restic](https
   ```
   This uses [`System.Security.Cryptography.RandomNumberGenerator`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator) for secure randomness.
 
-<div style="border: 2px solid #f44336; padding: 1em; border-radius: 6px; background-color: #fff0f0;">
-
 ### ⚠️ Critical: Backup Your `.secret` File
 
-**This file contains the encryption password for your restic repository.**
+This file contains the encryption password for your restic repository.
 
-If it is lost, **you will permanently lose access to your backups**.
+If it is lost, **you will permanently lose access to your backups.**
 restic cannot decrypt the repository without the exact password.
 
 ✅ Always store this file in a **secure, separate location** — outside your backup targets and version control.
 
-📁 Example:
+📁 *Example:*
 Store it on a USB stick, password manager, or encrypted vault that is not part of the backup set.
-
-</div>
 
 
 ## 👤 User Configuration
