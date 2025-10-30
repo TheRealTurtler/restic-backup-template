@@ -1,3 +1,5 @@
+[![PSScriptAnalyzer](https://github.com/TheRealTurtler/restic-backup-template/actions/workflows/powershell.yml/badge.svg)](https://github.com/TheRealTurtler/restic-backup-template/actions/workflows/powershell.yml)
+
 # 🛡️ restic Backup Template for Windows
 
 This repository provides a portable, team-safe backup setup using [restic](https://github.com/restic/restic) and [resticprofile](https://github.com/creativeprojects/resticprofile). It is built for clarity, portability and zero hidden dependencies. Simply unzip, configure and run.
