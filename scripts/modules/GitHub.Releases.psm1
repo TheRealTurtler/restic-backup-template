@@ -9,7 +9,10 @@ function Get-GitHubLatestReleaseTag {
 		$release = Invoke-RestMethod -Uri $apiUrl -UseBasicParsing
 		return $release.tag_name
 	}
-	catch { return $null }
+	catch {
+		Write-LogLine "Error querying latest release tag: $($_.Exception.Message)"
+		return $null
+	}
 }
 
 function Get-GitHubExecutable {
