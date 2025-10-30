@@ -9,7 +9,7 @@ test:
 
     # Backup directories
     source:
-      - 'C:\Restic\test\data'
+      - "{{ .ConfigDir }}/../test/data"
 
     iexclude:
       - "Downloads"

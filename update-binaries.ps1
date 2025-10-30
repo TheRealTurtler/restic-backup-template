@@ -1,109 +1,122 @@
 #requires -version 5.1
 $ErrorActionPreference = 'Stop'
 
-# === CONFIGURATION ===
-$BinDir            = "bin"                            # Target directory for final .exe files
-$TempDir           = $env:TEMP                        # Temporary working directory (can be overridden if needed)
-$ResticRepo        = "restic/restic"                  # GitHub repo for restic
-$ResticProfileRepo = "creativeprojects/resticprofile" # GitHub repo for resticprofile
+# === Load constants and modules ===
+. "$PSScriptRoot\scripts\constants.ps1"
+Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
+Import-Module (Join-Path $SCRIPTS_MODULES_DIR "GitHub.Releases.psm1")
 
-# Create bin directory if it doesn't exist
-if (-not (Test-Path $BinDir)) {
-    New-Item -ItemType Directory -Path $BinDir | Out-Null
+# === Repositories as constants ===
+$REPO_RESTIC = "restic/restic"
+$REPO_RESTICPROFILE = "creativeprojects/resticprofile"
+
+# === Version check functions ===
+
+function Get-InstalledResticVersion {
+	param([string]$ExePath)
+	if (-not (Test-Path $ExePath)) { return $null }
+	try {
+		$json = & $ExePath "version" "--json" 2>$null | ConvertFrom-Json
+		return $json.version
+	}
+ catch { return $null }
 }
 
-# Downloads a .zip asset from GitHub, extracts the matching .exe, renames it, and places it in bin\
-function Download-And-ExtractRenamedExe {
-    param (
-        [string]$Repo,                  # GitHub repo in the format "owner/project"
-        [string[]]$ZipNameMustContain, # Filters for identifying the correct .zip asset
-        [string[]]$ExeNameMustContain, # Filters for identifying the correct .exe inside the archive
-        [string]$TargetExeName         # Final name for the extracted .exe in bin\
-    )
-
-    try {
-        # Fetch all releases from GitHub API
-        $apiUrl = "https://api.github.com/repos/$Repo/releases"
-        $releases = Invoke-RestMethod -Uri $apiUrl -UseBasicParsing
-
-        foreach ($release in $releases) {
-            foreach ($asset in $release.assets) {
-                $name = $asset.name
-                $url = $asset.browser_download_url
-
-                # Check if asset name matches all required substrings
-                $matchesZip = $true
-                foreach ($filter in $ZipNameMustContain) {
-                    if ($name -notlike "*$filter*") {
-                        $matchesZip = $false
-                        break
-                    }
-                }
-
-                # If it's a matching .zip file, proceed with download and extraction
-                if ($matchesZip -and $name -like "*.zip") {
-                    $zipPath     = Join-Path $TempDir $name
-                    $extractPath = Join-Path $TempDir ([System.IO.Path]::GetFileNameWithoutExtension($name))
-
-                    Write-Host "Downloading $name..."
-                    Invoke-WebRequest -Uri $url -OutFile $zipPath
-
-                    # Extract contents of the .zip archive
-                    Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-
-                    # Find the first .exe file that matches all required substrings
-                    $exe = Get-ChildItem -Path $extractPath -Recurse -Filter "*.exe" |
-                        Where-Object {
-                            foreach ($filter in $ExeNameMustContain) {
-                                if ($_.Name -notlike "*$filter*") { return $false }
-                            }
-                            return $true
-                        } |
-                        Select-Object -First 1
-
-                    # Copy and rename the .exe to bin\
-                    if ($exe) {
-                        Copy-Item -Path $exe.FullName -Destination "$BinDir\$TargetExeName" -Force
-                        Write-Host "Extracted and renamed $($exe.Name) to $TargetExeName"
-                    } else {
-                        Write-Host "ERROR: No .exe matching filters $($ExeNameMustContain -join ', ') found in archive"
-                    }
-
-                    # Clean up temporary files
-                    if (Test-Path $zipPath)     { Remove-Item $zipPath -Force }
-                    if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
-
-                    return
-                }
-            }
-        }
-
-        # If no matching .zip asset was found
-        Write-Host ""
-        Write-Host "ERROR: No matching .zip asset found for ${Repo} with filters: $($ZipNameMustContain -join ', ')"
-    }
-    catch {
-        # Handle API or network errors
-        Write-Host ""
-        Write-Host "ERROR while downloading from ${Repo}:"
-        Write-Host $_.Exception.Message
-    }
+function Get-InstalledResticProfileVersion {
+	param([string]$ExePath)
+	if (-not (Test-Path $ExePath)) { return $null }
+	try {
+		$output = & $ExePath "version" "-v" 2>$null
+		foreach ($line in $output) {
+			if ($line -match '^\s*version:\s*([0-9.]+)') {
+				return $matches[1]
+			}
+		}
+	}
+ catch { return $null }
+	return $null
 }
 
-# === Download restic ===
-Download-And-ExtractRenamedExe `
-    -Repo $ResticRepo `
-    -ZipNameMustContain @("restic", "windows_amd64", "zip") `
-    -ExeNameMustContain @("restic", "exe") `
-    -TargetExeName "restic.exe"
+# === restic ===
+Start-LogBlock "restic"
 
-# === Download resticprofile ===
-Download-And-ExtractRenamedExe `
-    -Repo $ResticProfileRepo `
-    -ZipNameMustContain @("resticprofile", "windows_amd64", "zip") `
-    -ExeNameMustContain @("resticprofile", "exe") `
-    -TargetExeName "resticprofile.exe"
+$resticExe = Join-Path $BIN_DIR "restic.exe"
+$localResticVersion = Get-InstalledResticVersion -ExePath $resticExe
+$latestResticTag = Get-GitHubLatestReleaseTag -Repository $REPO_RESTIC
+$latestResticVersion = if ($latestResticTag) { $latestResticTag -replace '^[^0-9]+', '' } else { $null }
 
-Write-Host ""
-Write-Host "Done."
-Pause
+Write-LogLine "Local version:   $localResticVersion"
+Write-LogLine "Latest version:  $latestResticVersion"
+
+if (-not $latestResticVersion -and -not $localResticVersion) {
+	Write-LogLine "Error: Version check failed and no local version available."
+	Stop-LogBlock "restic"
+	exit 1
+}if ($latestResticVersion -and $localResticVersion -ne $latestResticVersion) {
+	$ok = Get-GitHubExecutable `
+		-Repository $REPO_RESTIC `
+		-AssetMustContain @("restic", "windows_amd64", "zip") `
+		-ExecutableMustContain @("restic", "exe") `
+		-TargetPath $resticExe `
+		-ReleaseTag $latestResticTag
+
+	if (-not $ok) {
+		if (-not $localResticVersion) {
+			Write-LogLine "Error: Download failed and no local version available."
+			Stop-LogBlock "restic"
+			exit 1
+		}
+		Write-LogLine "Warning: Failed to download update, keeping existing version."
+	}
+	elseif ($ok) {
+		Write-LogLine "Successfully updated restic."
+	}
+}
+else {
+	Write-LogLine "Already up to date."
+}
+
+Stop-LogBlock "restic"
+
+# === resticprofile ===
+Start-LogBlock "resticprofile"
+
+$profileExe = Join-Path $BIN_DIR "resticprofile.exe"
+$localProfileVersion = Get-InstalledResticProfileVersion -ExePath $profileExe
+$latestProfileTag = Get-GitHubLatestReleaseTag -Repository $REPO_RESTICPROFILE
+$latestProfileVersion = if ($latestProfileTag) { $latestProfileTag -replace '^[^0-9]+', '' } else { $null }
+
+Write-LogLine "Local version:   $localProfileVersion"
+Write-LogLine "Latest version:  $latestProfileVersion"
+
+if (-not $latestProfileVersion -and -not $localProfileVersion) {
+	Write-LogLine "Error: Version check failed and no local version available."
+	Stop-LogBlock "resticprofile"
+	exit 1
+}if ($latestProfileVersion -and $localProfileVersion -ne $latestProfileVersion) {
+	$ok = Get-GitHubExecutable `
+		-Repository $REPO_RESTICPROFILE `
+		-AssetMustContain @("resticprofile", "windows_amd64", "zip") `
+		-ExecutableMustContain @("resticprofile", "exe") `
+		-TargetPath $profileExe `
+		-ReleaseTag $latestProfileTag
+
+	if (-not $ok) {
+		if (-not $localProfileVersion) {
+			Write-LogLine "Error: Download failed and no local version available."
+			Stop-LogBlock "resticprofile"
+			exit 1
+		}
+		Write-LogLine "Warning: Failed to download update, keeping existing version."
+	}
+	elseif ($ok) {
+		Write-LogLine "Successfully updated resticprofile."
+	}
+}
+else {
+	Write-LogLine "Already up to date."
+}
+
+Stop-LogBlock "resticprofile"
+
+exit 0

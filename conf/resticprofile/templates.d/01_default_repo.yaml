@@ -1,0 +1,9 @@
+# Declare Variables
+{{ $user_name     := "<<USER_NAME>>" }}
+{{ $repo_type     := "<<REPO_TYPE>>" }}
+{{ $repo_base_dir := "<<REPO_BASE_DIR>>" }}
+
+default:
+  # Repository and password file
+  repository: "{{ $repo_type }}:{{ $repo_base_dir }}{{ $user_name }}/backup/{{ .Profile.Name }}"
+  password-file: "{{ .ConfigDir }}/../secrets/restic_{{ $user_name }}.secret"

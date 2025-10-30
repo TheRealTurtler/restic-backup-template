@@ -11,5 +11,8 @@ secrets/*
 # Re-include profiles.yaml
 !bin/profiles.yaml
 
+# Ignore generated repo configuration
+conf/resticprofile/profiles.d/01_default_repo.yaml
+
 # Ignore the entire test/ folder
 test/

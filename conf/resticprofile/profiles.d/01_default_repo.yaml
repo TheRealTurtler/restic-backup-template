@@ -1,9 +1,0 @@
-# Declare Variables
-# CAUTION: These WILL be evaluated even if commented out
-# TODO: Would be better in a separate file
-# {{ $user_name := "user" }}
-
-default:
-  # Repository and password file
-  repository: "local:{{ .ConfigDir }}/../test/backup/{{ $user_name }}/{{ .Profile.Name }}"
-  password-file: "{{ .ConfigDir }}/../secrets/{{ $user_name }}_{{ .Profile.Name }}.secret"
