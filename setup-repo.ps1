@@ -7,9 +7,9 @@ Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1") -Force
 
 # === Constants ===
 # Script paths
-$SCRIPT_UPDATE_BINARIES = "$PSScriptRoot\update-binaries.ps1"
-$SCRIPT_GENERATE_PASS = "$PSScriptRoot\generate-password.ps1"
-$SCRIPT_RUN_BACKUP = "$PSScriptRoot\run-backup.ps1"
+$SCRIPT_UPDATE_BINARIES = Join-Path $SCRIPTS_DIR "update-binaries.ps1"
+$SCRIPT_GENERATE_PASS = Join-Path $SCRIPTS_DIR "generate-password.ps1"
+$SCRIPT_RUN_BACKUP = Join-Path $SCRIPTS_DIR "run-backup.ps1"
 
 # Template configuration
 $PROFILE_TEMPLATE = "01_default_repo.yaml"

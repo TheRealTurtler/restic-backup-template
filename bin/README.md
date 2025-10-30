@@ -2,10 +2,11 @@
 
 This folder contains downloaded binaries used by the backup workflow.
 
-✅ After running `update-binaries.ps1`, the following executables will appear here:
+✅ After running `scripts\update-binaries.ps1`, the following executables will appear here:
 
 - `restic.exe` – the backup engine
 - `resticprofile.exe` – profile-based wrapper for restic
+- `restic-browser.exe` – GUI tool for browsing repository contents
 
 These files are downloaded automatically and should not be edited.
 

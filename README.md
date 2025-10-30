@@ -33,7 +33,7 @@ This repository provides a portable, team-safe backup setup using [restic](https
 
 - To generate a new cryptographically strong password, run:
   ```
-  .\generate-password.ps1
+  .\scripts\generate-password.ps1
   ```
   This uses [`System.Security.Cryptography.RandomNumberGenerator`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator) for secure randomness.
 
@@ -65,7 +65,7 @@ A `test` profile is included to verify your setup. This profile backs up the con
 
 To run the test backup:
 ```
-.\run-backup.ps1 -Profile test
+.\scripts\run-backup.ps1 -Profile test
 ```
 
 ### 💾 User Data Profile

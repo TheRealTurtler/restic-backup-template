@@ -40,7 +40,10 @@ function Get-GitHubExecutable {
 
 			$matchesAsset = $true
 			foreach ($filter in $AssetMustContain) {
-				if ($name -notlike "*$filter*") { $matchesAsset = $false; break }
+				if ($name -notlike "*$filter*" -and $name -notlike "*$($filter.ToLower())*" -and $name -notlike "*$($filter.ToUpper())*") {
+					$matchesAsset = $false
+					break
+				}
 			}
 
 			if ($matchesAsset) {
@@ -57,7 +60,11 @@ function Get-GitHubExecutable {
 				$exe = Get-ChildItem -Path $extractPath -Recurse -Filter "*.exe" |
 				Where-Object {
 					foreach ($filter in $ExecutableMustContain) {
-						if ($_.Name -notlike "*$filter*") { return $false }
+						if ($_.Name -notlike "*$filter*" -and
+							$_.Name -notlike "*$($filter.ToLower())*" -and
+							$_.Name -notlike "*$($filter.ToUpper())*") {
+							return $false
+						}
 					}
 					return $true
 				} |
