@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # === Load constants and modules ===
-. "$PSScriptRoot\scripts\constants.ps1"
+. "$PSScriptRoot\constants.ps1"
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
 
 # === Constants ===

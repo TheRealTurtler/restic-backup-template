@@ -1,82 +1,67 @@
 #requires -version 5.1
+param(
+	[Parameter(Mandatory = $true)]
+	[string]$Filename,   # Full filename incl. extension
+
+	[int]$ByteSize = 1024
+)
+
 $ErrorActionPreference = 'Stop'
 
 # === Load constants and modules ===
 . "$PSScriptRoot\constants.ps1"
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
 
-# === Constants ===
-$SECRET_DIR = "secrets"                      # Directory to store generated password files
-$SECRET_EXTENSION = ".secret"                # File extension for password output
-$DEFAULT_BYTE_SIZE = 1024                    # Default password size in bytes
+# === FUNCTIONS ===
 
-# === INPUT HANDLING ===
-[string]$Filename = $null
-[int]$ByteSize = $null
+function Test-PasswordFileExists {
+	param([string]$OutFile)
 
-if ($args.Count -ge 1) {
-	$Filename = $args[0]
-}
-if ($args.Count -ge 2) {
-	$ByteSize = [int]$args[1]
+	if (Test-Path $OutFile) { return $true }
+	return $false
 }
 
-if (-not $Filename) {
-	Write-LogLine "Please enter the following information:"
-	$Filename = Read-Host "Enter filename for password (without extension)"
-}
+function New-PasswordFile {
+	param(
+		[string]$OutFile,
+		[int]$ByteSize
+	)
 
-if (-not $ByteSize) {
-	$ByteSize = Read-Host "Enter password size in bytes (default: $DEFAULT_BYTE_SIZE)"
-	if (-not $ByteSize) {
-		$ByteSize = $DEFAULT_BYTE_SIZE
+	if (-not (Test-Path $SECRETS_DIR)) {
+		New-Item -ItemType Directory -Path $SECRETS_DIR | Out-Null
 	}
-	else {
-		$ByteSize = [int]$ByteSize
-	}
+
+	Write-LogLine "Generating password..."
+	Add-Type -AssemblyName System.Security
+	$bytes = New-Object byte[] $ByteSize
+	[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+	$securePassword = [Convert]::ToBase64String($bytes)
+
+	Set-Content -Path $OutFile -Value $securePassword -Encoding utf8
+	Write-LogLine "Password saved to: $OutFile."
+	Write-LogLine ""
+	Write-LogLine "WARNING: This password file is CRITICAL for repository access!"
+	Write-LogLine "         Store it in a safe place outside the backup."
+	Write-LogLine "         Without this password, the backup repository CANNOT be accessed anymore."
 }
 
-# === VALIDATION ===
+# === MAIN ===
 Start-LogBlock "Password Generation"
 
-if (-not $Filename) {
-	Write-LogLine "Error: No filename provided."
-	Stop-LogBlock "Password Generation"
-	exit 1
-}
 if ($ByteSize -lt 1) {
 	Write-LogLine "Error: Byte size must be at least 1."
 	Stop-LogBlock "Password Generation"
 	exit 1
 }
 
-# === PATH SETUP ===
-$OutFile = Join-Path $SECRET_DIR ($Filename + $SECRET_EXTENSION)
+$OutFile = Join-Path $SECRETS_DIR $Filename
 
-if (Test-Path $OutFile) {
-	Write-LogLine "Error: Password file already exists: $OutFile."
-	Write-LogLine "Aborting to prevent overwrite."
+if (-not (Test-PasswordFileExists -OutFile $OutFile)) {
+	New-PasswordFile -OutFile $OutFile -ByteSize $ByteSize
+	Stop-LogBlock "Password Generation"
+	exit 0
+}
+else {
 	Stop-LogBlock "Password Generation"
 	exit 1
 }
-
-if (-not (Test-Path $SECRET_DIR)) {
-	New-Item -ItemType Directory -Path $SECRET_DIR | Out-Null
-}
-
-# === PASSWORD GENERATION ===
-Write-LogLine "Generating password..."
-Add-Type -AssemblyName System.Security
-$bytes = New-Object byte[] $ByteSize
-[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-$securePassword = [Convert]::ToBase64String($bytes)
-
-# === WRITE TO FILE ===
-Set-Content -Path $OutFile -Value $securePassword -Encoding utf8
-Write-LogLine "Password saved to: $OutFile."
-Write-LogLine ""
-Write-LogLine "WARNING: This password file is CRITICAL for repository access!"
-Write-LogLine "         Store it in a safe place outside the backup."
-Write-LogLine "         Without this password, the backup repository CANNOT be accessed anymore."
-Stop-LogBlock "Password Generation"
-exit 0

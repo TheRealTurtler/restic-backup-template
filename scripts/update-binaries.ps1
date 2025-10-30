@@ -6,85 +6,126 @@ $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "GitHub.Releases.psm1")
 
-# === Repositories as constants ===
-$REPO_RESTIC = "restic/restic"
-$REPO_RESTICPROFILE = "creativeprojects/resticprofile"
-$REPO_RESTICBROWSER = "emuell/restic-browser"
-
-# === Version check functions ===
-
-function Get-InstalledResticVersion {
-	param([string]$ExePath)
-	if (-not (Test-Path $ExePath)) { return $null }
-	try {
-		$json = & $ExePath "version" "--json" 2>$null | ConvertFrom-Json
-		return $json.version
-	}
- catch { return $null }
-}
-
-function Get-InstalledResticProfileVersion {
-	param([string]$ExePath)
-	if (-not (Test-Path $ExePath)) { return $null }
-	try {
-		$output = & $ExePath "version" "-v" 2>$null
-		foreach ($line in $output) {
-			if ($line -match '^\s*version:\s*([0-9.]+)') {
-				return $matches[1]
-			}
-		}
-	}
- catch { return $null }
-	return $null
-}
-
-function Get-InstalledResticBrowserVersion {
-	param([string]$ExePath)
-
-	if (-not (Test-Path $ExePath)) { return $null }
-
-	try {
-		$startInfo = New-Object System.Diagnostics.ProcessStartInfo
-		$startInfo.FileName = $ExePath
-		$startInfo.Arguments = "--version"
-		$startInfo.UseShellExecute = $false
-		$startInfo.RedirectStandardOutput = $true
-		$startInfo.RedirectStandardError = $true
-
-		$process = New-Object System.Diagnostics.Process
-		$process.StartInfo = $startInfo
-		$process.Start() | Out-Null
-
-		$output = $process.StandardOutput.ReadToEnd()
-		$process.WaitForExit()
-
-		foreach ($line in ($output -split [Environment]::NewLine)) {
-			if ($line -match '^\s*.*?\s*v([0-9.]+)') {
-				return $matches[1]
-			}
-		}
-	}
-	catch {
-		return $null
-	}
-
-	return $null
-}
-
-function Update-Tool {
+function Get-InstalledVersion {
 	param(
-		[string]$Name,
 		[string]$ExePath,
-		[string]$Repository,
-		[ScriptBlock]$GetLocalVersion,
-		[string[]]$AssetMustContain,
-		[string[]]$ExecutableMustContain
+		[string[]]$Arguments,
+		[ValidateSet('json', 'regex')][string]$Decoder,
+		[string]$DecoderParam
 	)
 
-	Start-LogBlock $Name
+	if (-not (Test-Path $ExePath)) { return $null }
 
-	$localVersion = & $GetLocalVersion $ExePath
-	$latestTag = Get-GitHubLatestReleaseTag -Repository $Repository
+	try {
+		# Run process and capture stdout
+		$psi = New-Object System.Diagnostics.ProcessStartInfo
+		$psi.FileName = $ExePath
+		$psi.Arguments = ($Arguments -join ' ')
+		$psi.UseShellExecute = $false
+		$psi.RedirectStandardOutput = $true
+		$psi.RedirectStandardError = $true
+
+		$p = New-Object System.Diagnostics.Process
+		$p.StartInfo = $psi
+		$p.Start() | Out-Null
+		$out = $p.StandardOutput.ReadToEnd()
+		$p.WaitForExit()
+
+		switch ($Decoder) {
+			'json' {
+				$json = $out | ConvertFrom-Json
+				return $json.$DecoderParam
+			}
+			'regex' {
+				foreach ($line in ($out -split "`r?`n")) {
+					if ($line -match $DecoderParam) { return $matches[1] }
+				}
+			}
+		}
+	}
+	catch { return $null }
+
+	return $null
+}
+
+# === Tool specification lookup ===
+function Get-ToolSpec {
+	param([ValidateSet('restic', 'resticprofile', 'restic-browser')][string]$Name)
+
+	switch ($Name) {
+		'restic' {
+			[pscustomobject]@{
+				Name                  = 'restic'
+				ExePath               = Join-Path $BIN_DIR 'restic.exe'
+				Repository            = 'restic/restic'
+				GetLocalVersion       = { Get-InstalledVersion -ExePath $args[0] -Arguments @('version', '--json') -Decoder json -DecoderParam 'version' }
+				AssetMustContain      = @("restic", "windows_amd64", "zip")
+				ExecutableMustContain = @("restic", "exe")
+			}
+		}
+		'resticprofile' {
+			[pscustomobject]@{
+				Name                  = 'resticprofile'
+				ExePath               = Join-Path $BIN_DIR 'resticprofile.exe'
+				Repository            = 'creativeprojects/resticprofile'
+				GetLocalVersion       = { Get-InstalledVersion -ExePath $args[0] -Arguments @('version', '-v') -Decoder regex -DecoderParam '^\s*version:\s*([0-9.]+)' }
+				AssetMustContain      = @("resticprofile", "windows_amd64", "zip")
+				ExecutableMustContain = @("resticprofile", "exe")
+			}
+		}
+		'restic-browser' {
+			[pscustomobject]@{
+				Name                  = 'restic-browser'
+				ExePath               = Join-Path $BIN_DIR 'restic-browser.exe'
+				Repository            = 'emuell/restic-browser'
+				GetLocalVersion       = { Get-InstalledVersion -ExePath $args[0] -Arguments @('--version') -Decoder regex -DecoderParam '^\s*.*?\s*v([0-9.]+)' }
+				AssetMustContain      = @("restic-browser", "windows", "zip")
+				ExecutableMustContain = @("restic-browser", "exe")
+			}
+		}
+	}
+}
+
+# === Ensure (download only if missing) ===
+function Ensure-Tool {
+	param([object]$Spec)
+
+	if (Test-Path $Spec.ExePath) { return }
+
+	Start-LogBlock "$($Spec.Name)"
+
+	$latestTag = Get-GitHubLatestReleaseTag -Repository $Spec.Repository
+	if (-not $latestTag) {
+		Write-LogLine "Error: Could not determine latest release for $($Spec.Name)."
+		Stop-LogBlock "$($Spec.Name)"
+		exit 1
+	}
+
+	$ok = Get-GitHubExecutable `
+		-Repository $Spec.Repository `
+		-AssetMustContain $Spec.AssetMustContain `
+		-ExecutableMustContain $Spec.ExecutableMustContain `
+		-TargetPath $Spec.ExePath `
+		-ReleaseTag $latestTag
+
+	if (-not $ok) {
+		Write-LogLine "Error: Failed to download $($Spec.Name)."
+		Stop-LogBlock "$($Spec.Name)"
+		exit 1
+	}
+
+	Write-LogLine "Successfully downloaded $($Spec.Name)."
+	Stop-LogBlock "$($Spec.Name)"
+}
+
+# === Update (compare versions and download if newer) ===
+function Update-Tool {
+	param([object]$Spec)
+
+	Start-LogBlock $Spec.Name
+
+	$localVersion = & $Spec.GetLocalVersion $Spec.ExePath
+	$latestTag = Get-GitHubLatestReleaseTag -Repository $Spec.Repository
 	$latestVersion = if ($latestTag) { $latestTag -replace '^[^0-9]+', '' } else { $null }
 
 	Write-LogLine "Local version:   $localVersion"
@@ -92,28 +133,28 @@ function Update-Tool {
 
 	if (-not $latestVersion -and -not $localVersion) {
 		Write-LogLine "Error: Version check failed and no local version available."
-		Stop-LogBlock $Name
+		Stop-LogBlock $Spec.Name
 		exit 1
 	}
 
 	if ($latestVersion -and $localVersion -ne $latestVersion) {
 		$ok = Get-GitHubExecutable `
-			-Repository $Repository `
-			-AssetMustContain $AssetMustContain `
-			-ExecutableMustContain $ExecutableMustContain `
-			-TargetPath $ExePath `
+			-Repository $Spec.Repository `
+			-AssetMustContain $Spec.AssetMustContain `
+			-ExecutableMustContain $Spec.ExecutableMustContain `
+			-TargetPath $Spec.ExePath `
 			-ReleaseTag $latestTag
 
 		if (-not $ok) {
 			if (-not $localVersion) {
 				Write-LogLine "Error: Download failed and no local version available."
-				Stop-LogBlock $Name
+				Stop-LogBlock $Spec.Name
 				exit 1
 			}
 			Write-LogLine "Warning: Failed to download update, keeping existing version."
 		}
 		else {
-			Write-LogLine "Successfully updated $Name."
+			Write-LogLine "Successfully updated $($Spec.Name)."
 		}
 	}
 	elseif (-not $latestVersion) {
@@ -123,31 +164,34 @@ function Update-Tool {
 		Write-LogLine "Already up to date."
 	}
 
-	Stop-LogBlock $Name
+	Stop-LogBlock $Spec.Name
 }
 
-Update-Tool `
-	-Name "restic" `
-	-ExePath (Join-Path $BIN_DIR "restic.exe") `
-	-Repository $REPO_RESTIC `
-	-GetLocalVersion ${function:Get-InstalledResticVersion} `
-	-AssetMustContain @("restic", "windows_amd64", "zip") `
-	-ExecutableMustContain @("restic", "exe")
+# === Batch wrappers (data-driven) ===
+$TOOLS = @('restic', 'resticprofile', 'restic-browser')
 
-Update-Tool `
-	-Name "resticprofile" `
-	-ExePath (Join-Path $BIN_DIR "resticprofile.exe") `
-	-Repository $REPO_RESTICPROFILE `
-	-GetLocalVersion ${function:Get-InstalledResticProfileVersion} `
-	-AssetMustContain @("resticprofile", "windows_amd64", "zip") `
-	-ExecutableMustContain @("resticprofile", "exe")
+function Ensure-AllTools {
+	foreach ($t in $TOOLS) { Ensure-Tool (Get-ToolSpec -Name $t) }
+}
 
-Update-Tool `
-	-Name "restic-browser" `
-	-ExePath (Join-Path $BIN_DIR "restic-browser.exe") `
-	-Repository $REPO_RESTICBROWSER `
-	-GetLocalVersion ${function:Get-InstalledResticBrowserVersion} `
-	-AssetMustContain @("restic-browser", "windows", "zip") `
-	-ExecutableMustContain @("restic-browser", "exe")
+function Update-AllTools {
+	foreach ($t in $TOOLS) { Update-Tool (Get-ToolSpec -Name $t) }
+}
 
-exit 0
+# === Direct execution: ensure, then update only pre-existing ones ===
+if ($MyInvocation.InvocationName -ne '.') {
+	# Track existing binaries before ensure
+	$preExisting = @{}
+	foreach ($t in $TOOLS) {
+		$spec = Get-ToolSpec -Name $t
+		$preExisting[$t] = Test-Path $spec.ExePath
+	}
+
+	Ensure-AllTools
+
+	foreach ($t in $TOOLS) {
+		if ($preExisting[$t]) { Update-Tool (Get-ToolSpec -Name $t) }
+	}
+
+	exit 0
+}
