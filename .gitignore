@@ -14,5 +14,5 @@ secrets/*
 # Ignore generated repo configuration
 conf/resticprofile/profiles.d/01_default_repo.yaml
 
-# Ignore the entire test/ folder
-test/
+# Ignore backups in the test/ folder
+test/**/backup
