@@ -16,20 +16,31 @@ userdata:
       # Let's be real, no one cleans the download folder
       - '{{ .Env.USERPROFILE }}\Downloads'
 
-      # AppData contains A LOT of useless data
-      # If at all only specific subfolders should be included
+      # AppData contains a lot of volatile or redundant data
       - '{{ .Env.USERPROFILE }}\AppData'
 
-      # Any Cloud service folders do not need to be included
-      # These files already reside in the cloud and usually don't have to be included in a backup of local files
+      # Cloud storage folders are already synced externally
       - '{{ .Env.USERPROFILE }}\Dropbox'
       - '{{ .Env.USERPROFILE }}\Google Drive'
       - '{{ .Env.USERPROFILE }}\Nextcloud'
       - '{{ .Env.USERPROFILE }}\OneDrive'
 
-      # TODO: Some shitty applications think Windows = Linux and they can spam the user folder with "." folders
-      # This is data that should be stored in AppData and should therefore be excluded
+      # Common dotfolders that contain caches, build artifacts, or redundant config
+      # These are excluded explicitly to avoid losing .ssh or other critical folders
       - '{{ .Env.USERPROFILE }}\.cache'
+      - '{{ .Env.USERPROFILE }}\.vscode'
+      - '{{ .Env.USERPROFILE }}\.platformio'
+      - '{{ .Env.USERPROFILE }}\.npm'
+      - '{{ .Env.USERPROFILE }}\.cargo'
+      - '{{ .Env.USERPROFILE }}\.conda'
+      - '{{ .Env.USERPROFILE }}\.jupyter'
+      - '{{ .Env.USERPROFILE }}\.matplotlib'
+      - '{{ .Env.USERPROFILE }}\.idea'
+      - '{{ .Env.USERPROFILE }}\.gradle'
+      - '{{ .Env.USERPROFILE }}\.terraform'
+      - '{{ .Env.USERPROFILE }}\.config'
+      - '{{ .Env.USERPROFILE }}\.local'
+      - '{{ .Env.USERPROFILE }}\.crossnote'
 
     # Tags
     tag:
