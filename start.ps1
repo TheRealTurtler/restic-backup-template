@@ -7,14 +7,13 @@ Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
 
 # === Script paths ===
 $SCRIPT_SETUP_REPO = Join-Path $SCRIPTS_DIR "setup-repo.ps1"
-$SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"
 $SCRIPT_RUN_BACKUP = Join-Path $SCRIPTS_DIR "run-backup.ps1"
 $SCRIPT_OPEN_BROWSER = Join-Path $SCRIPTS_DIR "open-browser.ps1"
 $SCRIPT_UPDATE_BINARIES = Join-Path $SCRIPTS_DIR "update-binaries.ps1"
 
 # === Load functions from scripts ===
 . $SCRIPT_UPDATE_BINARIES
-. $SCRIPT_REPO_CONFIG
+. $SCRIPT_SETUP_REPO
 
 # === Central config/template files ===
 $ProfileConfigFile = Join-Path $CONF_PROFILES_DIR  "01_default_repo.yaml"
@@ -23,20 +22,14 @@ $TemplateConfigFile = Join-Path $CONF_TEMPLATES_DIR "01_default_repo.yaml"
 # === Initialize required tools/binaries ===
 Initialize-AllTools
 
-# === Load or initialize configuration ===
-$configVars = Get-RepoConfig -ConfigFile $ProfileConfigFile
-if (-not (Test-RepoConfigValidity -ConfigVars $configVars)) {
-	Write-LogLine "No valid repository configuration found. Starting setup..."
-	& $SCRIPT_SETUP_REPO -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
-
-	$configVars = Get-RepoConfig -ConfigFile $ProfileConfigFile
-	if (-not (Test-RepoConfigValidity -ConfigVars $configVars)) {
-		Write-LogLine "Configuration invalid after setup. Aborting."
-		exit 1
-	}
+# === Load or initialize repository configuration ===
+$configVars = Initialize-RepoConfig -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
+if (-not $configVars) {
+	Write-LogLine "Configuration invalid after setup. Aborting."
+	exit 1
 }
 
-# === Menu ===
+# === Main Menu ===
 function Show-MainMenu {
 	Write-Host ""
 	Write-Host "=== Backup Menu ==="
@@ -53,10 +46,14 @@ do {
 	$choice = Read-Host "Enter number"
 
 	switch ($choice) {
-		"1" { & $SCRIPT_RUN_BACKUP }
-		"2" { & $SCRIPT_OPEN_BROWSER }
+		"1" {
+			& $SCRIPT_RUN_BACKUP
+		}
+		"2" {
+			& $SCRIPT_OPEN_BROWSER
+		}
 		"3" {
-			& $SCRIPT_SETUP_REPO -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
+			Show-RepoConfigMenu -ConfigVars $configVars -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
 			$configVars = Get-RepoConfig -ConfigFile $ProfileConfigFile
 			if (-not (Test-RepoConfigValidity -ConfigVars $configVars)) {
 				Write-LogLine "Configuration invalid after changes. Please re-run settings."
@@ -72,9 +69,15 @@ do {
 			Write-LogLine ("PASSWORD_FILE : {0}" -f $configVars["PASSWORD_FILE"])
 			Stop-LogBlock "Current Repository Config"
 		}
-		"5" { Update-AllTools }
-		"6" { break }
-		default { Write-Host "Invalid choice." }
+		"5" {
+			Update-AllTools
+		}
+		"6" {
+			break
+		}
+		default {
+			Write-Host "Invalid choice."
+		}
 	}
 } until ($choice -eq "6")
 

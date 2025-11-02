@@ -1,11 +1,13 @@
 #requires -version 5.1
 $ErrorActionPreference = 'Stop'
 
-# === Load constants and modules ===
+# === Load constants and required modules ===
 . "$PSScriptRoot\constants.ps1"
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "GitHub.Releases.psm1")
 
+# === Detect installed version of a tool ===
+# Executes the binary with given arguments and extracts version using either JSON or regex
 function Get-InstalledVersion {
 	param(
 		[string]$ExePath,
@@ -17,7 +19,6 @@ function Get-InstalledVersion {
 	if (-not (Test-Path $ExePath)) { return $null }
 
 	try {
-		# Run process and capture stdout
 		$psi = New-Object System.Diagnostics.ProcessStartInfo
 		$psi.FileName = $ExePath
 		$psi.Arguments = ($Arguments -join ' ')
@@ -43,12 +44,15 @@ function Get-InstalledVersion {
 			}
 		}
 	}
-	catch { return $null }
+	catch {
+		return $null
+	}
 
 	return $null
 }
 
-# === Tool specification lookup ===
+# === Return tool specification object ===
+# Includes binary path, GitHub repository, version decoder, and asset filters
 function Get-ToolSpec {
 	param([ValidateSet('restic', 'resticprofile', 'restic-browser')][string]$Name)
 
@@ -86,7 +90,7 @@ function Get-ToolSpec {
 	}
 }
 
-# === Ensure (download only if missing) ===
+# === Download tool if not already present ===
 function Initialize-Tool {
 	param([object]$Spec)
 
@@ -118,7 +122,7 @@ function Initialize-Tool {
 	Stop-LogBlock "$($Spec.Name)"
 }
 
-# === Update (compare versions and download if newer) ===
+# === Update tool if newer version is available ===
 function Update-Tool {
 	param([object]$Spec)
 
@@ -167,30 +171,35 @@ function Update-Tool {
 	Stop-LogBlock $Spec.Name
 }
 
-# === Batch wrappers (data-driven) ===
+# === Batch initialization and update ===
 $TOOLS = @('restic', 'resticprofile', 'restic-browser')
 
 function Initialize-AllTools {
-	foreach ($t in $TOOLS) { Initialize-Tool (Get-ToolSpec -Name $t) }
+	foreach ($t in $TOOLS) {
+		Initialize-Tool (Get-ToolSpec -Name $t)
+	}
 }
 
 function Update-AllTools {
-	foreach ($t in $TOOLS) { Update-Tool (Get-ToolSpec -Name $t) }
+	foreach ($t in $TOOLS) {
+		Update-Tool (Get-ToolSpec -Name $t)
+	}
 }
 
-# === Direct execution: ensure, then update only pre-existing ones ===
+# === Direct execution: initialize all, then update only pre-existing tools ===
 if ($MyInvocation.InvocationName -ne '.') {
-	# Track existing binaries before ensure
 	$preExisting = @{}
 	foreach ($t in $TOOLS) {
 		$spec = Get-ToolSpec -Name $t
 		$preExisting[$t] = Test-Path $spec.ExePath
 	}
 
-	Ensure-AllTools
+	Initialize-AllTools
 
 	foreach ($t in $TOOLS) {
-		if ($preExisting[$t]) { Update-Tool (Get-ToolSpec -Name $t) }
+		if ($preExisting[$t]) {
+			Update-Tool (Get-ToolSpec -Name $t)
+		}
 	}
 
 	exit 0

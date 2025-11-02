@@ -1,19 +1,20 @@
+#requires -version 5.1
+$ErrorActionPreference = 'Stop'
+
+# === Normalize directory path ===
+# Converts backslashes to forward slashes, collapses duplicates, and ensures trailing slash
 function Convert-Directory {
 	param([string]$Path)
 
 	if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
 
 	$normalized = $Path.Trim()
-
-	# Convert all backslashes to forward slashes
 	$normalized = $normalized -replace '[\\]', '/'
 
-	# Collapse duplicate forward slashes
 	while ($normalized.Contains('//')) {
 		$normalized = $normalized.Replace('//', '/')
 	}
 
-	# Ensure trailing slash
 	if (-not $normalized.EndsWith('/')) {
 		$normalized += '/'
 	}
@@ -21,6 +22,8 @@ function Convert-Directory {
 	return $normalized
 }
 
+# === Normalize filename ===
+# Extracts the filename from a full path and returns it if valid
 function Convert-FileName {
 	param([string]$FileName)
 
@@ -33,25 +36,23 @@ function Convert-FileName {
 	return $name
 }
 
+# === Normalize full path ===
+# Combines normalized directory and filename if both are present
 function Convert-Path {
 	param([string]$Path)
 
 	if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
 
-	# Zerlegen in Directory + FileName
 	$dir = [System.IO.Path]::GetDirectoryName($Path)
 	$file = [System.IO.Path]::GetFileName($Path)
 
 	if ([string]::IsNullOrWhiteSpace($file)) {
-		# Nur ein Verzeichnis → Directory normalisieren
 		return Convert-Directory $dir
 	}
 	elseif ([string]::IsNullOrWhiteSpace($dir)) {
-		# Nur ein Dateiname → FileName normalisieren
 		return Convert-FileName $file
 	}
 	else {
-		# Beides vorhanden → Directory + FileName kombinieren
 		$normalizedDir = Convert-Directory $dir
 		$normalizedFile = Convert-FileName $file
 		return ($normalizedDir + $normalizedFile)
