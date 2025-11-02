@@ -17,7 +17,7 @@ default:
   # Print error summary when any command fails
   run-after-fail:
     - >
-      powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/profile_run-after-fail.ps1
+      powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/command-hooks/backup_run-after-fail.ps1
       {{ .Hostname }}
       {{ .OS }}
       {{ .Arch }}
@@ -47,7 +47,7 @@ default:
     # Send e-mail when backup fails
     run-after-fail:
       - >
-        powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/backup_run-after-fail.ps1
+        powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/command-hooks/backup_run-after-fail.ps1
         {{ .Hostname }}
         {{ .OS }}
         {{ .Arch }}
