@@ -51,7 +51,7 @@ function Read-ValidatedSecretFilePath {
 	return $validated
 }
 
-# === Configure local repository path ===
+# === Configure local repository ===
 function Set-RepoConfigLocal {
 	param([hashtable]$ConfigVars)
 	$normalized = Read-ValidatedPath -PromptText "Enter local repository path"
@@ -62,17 +62,24 @@ function Set-RepoConfigLocal {
 	return $ConfigVars
 }
 
-# === Configure SFTP repository path ===
+# === Configure SFTP repository ===
 function Set-RepoConfigSftp {
 	param([hashtable]$ConfigVars)
+
+	Write-Host ""
+	Write-Host "NOTE: SFTP login requires SSH key authentication."
+	Write-Host "      Ensure your public key is installed on the remote host"
+	Write-Host "      and your private key is available to the backup tool."
+
 	$user = Read-Host "Enter SFTP username"
-	$password = Read-Host "Enter SFTP password"
 	$sftpHost = Read-Host "Enter SFTP host (e.g. example.com)"
 	$normalized = Read-ValidatedPath -PromptText "Enter SFTP repository path (e.g. /backups/projectA)"
+
 	if ($normalized) {
 		$ConfigVars[$CONFIG_KEY_REPO_TYPE] = "sftp"
-		$ConfigVars[$CONFIG_KEY_REPO_DIR] = "${user}:${password}@${sftpHost}:${normalized}"
+		$ConfigVars[$CONFIG_KEY_REPO_DIR] = "${user}@${sftpHost}:${normalized}"
 	}
+
 	return $ConfigVars
 }
 
