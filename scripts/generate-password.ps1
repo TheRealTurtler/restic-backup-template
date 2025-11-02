@@ -42,13 +42,17 @@ function New-PasswordFile {
 
 	# Convert to base64 string and save to file
 	$securePassword = [Convert]::ToBase64String($bytes)
-	Set-Content -Path $OutFile -Value $securePassword -Encoding utf8
+
+	$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+	[System.IO.File]::WriteAllText($OutFile, $securePassword, $utf8NoBom)
 
 	Write-LogLine "Password saved to: $OutFile."
 	Write-LogLine ""
 	Write-LogLine "WARNING: This password file is CRITICAL for repository access!"
 	Write-LogLine "         Store it in a safe location outside the backup."
 	Write-LogLine "         Without this password, the repository CANNOT be accessed."
+
+	Stop-LogBlock "Password Generation"
 }
 
 # === Main execution block ===
