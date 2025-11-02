@@ -87,7 +87,7 @@ function Get-ToolSpec {
 }
 
 # === Ensure (download only if missing) ===
-function Ensure-Tool {
+function Initialize-Tool {
 	param([object]$Spec)
 
 	if (Test-Path $Spec.ExePath) { return }
@@ -170,8 +170,8 @@ function Update-Tool {
 # === Batch wrappers (data-driven) ===
 $TOOLS = @('restic', 'resticprofile', 'restic-browser')
 
-function Ensure-AllTools {
-	foreach ($t in $TOOLS) { Ensure-Tool (Get-ToolSpec -Name $t) }
+function Initialize-AllTools {
+	foreach ($t in $TOOLS) { Initialize-Tool (Get-ToolSpec -Name $t) }
 }
 
 function Update-AllTools {

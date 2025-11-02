@@ -5,73 +5,76 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\scripts\constants.ps1"
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
 
-# === Other scripts ===
+# === Script paths ===
 $SCRIPT_SETUP_REPO = Join-Path $SCRIPTS_DIR "setup-repo.ps1"
+$SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"
 $SCRIPT_RUN_BACKUP = Join-Path $SCRIPTS_DIR "run-backup.ps1"
 $SCRIPT_OPEN_BROWSER = Join-Path $SCRIPTS_DIR "open-browser.ps1"
-$SCRIPT_GEN_PASS = Join-Path $SCRIPTS_DIR "generate-password.ps1"
-$SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"
 $SCRIPT_UPDATE_BINARIES = Join-Path $SCRIPTS_DIR "update-binaries.ps1"
 
-# === Load functions from other scripts ===
+# === Load functions from scripts ===
 . $SCRIPT_UPDATE_BINARIES
 . $SCRIPT_REPO_CONFIG
 
-# Path to the profile config file
-$profileConfigFile = Join-Path $CONF_PROFILES_DIR "01_default_repo.yaml"
-$templateConfigFile = Join-Path $CONF_TEMPLATES_DIR "01_default_repo.yaml"
+# === Central config/template files ===
+$ProfileConfigFile = Join-Path $CONF_PROFILES_DIR  "01_default_repo.yaml"
+$TemplateConfigFile = Join-Path $CONF_TEMPLATES_DIR "01_default_repo.yaml"
 
-# === Ensure all required binaries exist ===
-Ensure-AllTools
+# === Initialize required tools/binaries ===
+Initialize-AllTools
 
-# === Load and validate config ===
-$configVars = Get-ConfigVariables -ConfigFile $profileConfigFile
+# === Load or initialize configuration ===
+$configVars = Get-RepoConfig -ConfigFile $ProfileConfigFile
+if (-not (Test-RepoConfigValidity -ConfigVars $configVars)) {
+	Write-LogLine "No valid repository configuration found. Starting setup..."
+	& $SCRIPT_SETUP_REPO -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
 
-if (-not (Test-ConfigValid -ConfigVars $configVars)) {
-	Write-Host "Config invalid or missing. Running setup-repo.ps1..."
-	& $SCRIPT_SETUP_REPO
-	exit 1
+	$configVars = Get-RepoConfig -ConfigFile $ProfileConfigFile
+	if (-not (Test-RepoConfigValidity -ConfigVars $configVars)) {
+		Write-LogLine "Configuration invalid after setup. Aborting."
+		exit 1
+	}
 }
 
-# === Menu loop ===
-function Show-Menu {
+# === Menu ===
+function Show-MainMenu {
 	Write-Host ""
 	Write-Host "=== Backup Menu ==="
 	Write-Host "1) Run backup"
 	Write-Host "2) Open backup browser"
-	Write-Host "3) Generate new password"
-	Write-Host "4) Change repository settings"
+	Write-Host "3) Change repository settings"
+	Write-Host "4) Show current repository config"
 	Write-Host "5) Update binaries"
 	Write-Host "6) Exit"
 }
 
 do {
-	Show-Menu
+	Show-MainMenu
 	$choice = Read-Host "Enter number"
 
 	switch ($choice) {
-		"1" {
-			& $SCRIPT_RUN_BACKUP
-		}
-		"2" {
-			& $SCRIPT_OPEN_BROWSER
-		}
+		"1" { & $SCRIPT_RUN_BACKUP }
+		"2" { & $SCRIPT_OPEN_BROWSER }
 		"3" {
-			& $SCRIPT_GEN_PASS -Filename $configVars[$CONFIG_KEY_PASSWORD_FILE] -ByteSize 1024
+			& $SCRIPT_SETUP_REPO -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
+			$configVars = Get-RepoConfig -ConfigFile $ProfileConfigFile
+			if (-not (Test-RepoConfigValidity -ConfigVars $configVars)) {
+				Write-LogLine "Configuration invalid after changes. Please re-run settings."
+			}
+			else {
+				Write-LogLine "Configuration updated."
+			}
 		}
-
 		"4" {
-			& $SCRIPT_SETUP_REPO
+			Start-LogBlock "Current Repository Config"
+			Write-LogLine ("REPO_TYPE     : {0}" -f $configVars["REPO_TYPE"])
+			Write-LogLine ("REPO_DIR      : {0}" -f $configVars["REPO_DIR"])
+			Write-LogLine ("PASSWORD_FILE : {0}" -f $configVars["PASSWORD_FILE"])
+			Stop-LogBlock "Current Repository Config"
 		}
-		"5" {
-			Update-AllTools
-		}
-		"6" {
-			break
-		}
-		default {
-			Write-Host "Invalid choice."
-		}
+		"5" { Update-AllTools }
+		"6" { break }
+		default { Write-Host "Invalid choice." }
 	}
 } until ($choice -eq "6")
 

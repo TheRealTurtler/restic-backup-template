@@ -1,157 +1,182 @@
 #requires -version 5.1
+param(
+	[Parameter(Mandatory = $true)]
+	[string]$TemplateFile,
+
+	[Parameter(Mandatory = $true)]
+	[string]$ConfigFile
+)
+
 $ErrorActionPreference = 'Stop'
 
-# === Load constants and modules ===
 . "$PSScriptRoot\constants.ps1"
-Import-Module (Join-Path $SCRIPTS_MODULES_DIR "Logging.psm1")
+. (Join-Path $SCRIPTS_DIR "repo-config.ps1")
 
-# === Constants ===
-# Script paths
-$SCRIPT_UPDATE_BINARIES = Join-Path $SCRIPTS_DIR "update-binaries.ps1"
-$SCRIPT_GENERATE_PASS = Join-Path $SCRIPTS_DIR "generate-password.ps1"
-$SCRIPT_RUN_BACKUP = Join-Path $SCRIPTS_DIR "run-backup.ps1"
+Import-Module (Join-Path $SCRIPTS_MODULES_DIR "PathValidation.psm1") -Force
 
-# Template configuration
-$PROFILE_TEMPLATE = "01_default_repo.yaml"
-$PLACEHOLDER_USER = "<<USER_NAME>>"
-$PLACEHOLDER_TYPE = "<<REPO_TYPE>>"
-$PLACEHOLDER_DIR = "<<REPO_BASE_DIR>>"
+$CONFIG_KEY_REPO_TYPE = "REPO_TYPE"
+$CONFIG_KEY_REPO_DIR = "REPO_DIR"
+$CONFIG_KEY_PASSWORD_FILE = "PASSWORD_FILE"
 
-# Validation regex
-$USERNAME_REGEX = '^[a-zA-Z0-9_-]+$'
-$PATH_REGEX = '^[a-zA-Z]:\\[a-zA-Z0-9_\-\\/ ]+$|^[a-zA-Z0-9_\-\\/ ]+$'
+# --- Hilfsfunktion für Pfade ---
+function Read-ValidatedPath {
+	param([string]$PromptText = "Enter path")
 
-# --- Helper functions ---
-function Read-ValidatedInput {
-	param(
-		[string]$Prompt,
-		[string]$Regex
-	)
-	do {
-		$input = Read-Host $Prompt
-		$isValid = $input -match $Regex
-		if (-not $isValid) {
-			Write-Host "Invalid input. Please try again."
-		}
-	} until ($isValid)
-	return $input
-}
-
-function Ask-YesNo {
-	param([string]$Prompt)
-	do {
-		$answer = Read-Host "$Prompt (yes/no)"
-	} until ($answer -in @("yes", "no"))
-	return $answer -eq "yes"
-}
-
-# === Initialize repository ===
-Start-LogBlock "Repository Setup"
-
-# --- Update binaries first ---
-Write-LogLine "Updating binaries..."
-& $SCRIPT_UPDATE_BINARIES
-if ($LASTEXITCODE -ne 0) {
-	Stop-LogBlock "Repository Setup"
-	exit $LASTEXITCODE
-}
-
-# --- Check if profile already exists ---
-$profilePath = Join-Path $CONF_PROFILES_DIR $PROFILE_TEMPLATE
-$templatePath = Join-Path $CONF_TEMPLATES_DIR $PROFILE_TEMPLATE
-if (Test-Path $profilePath) {
-	Write-LogLine "Warning: A backup profile already exists at '$profilePath'."
-	if (-not (Ask-YesNo "Overwrite")) {
-		Stop-LogBlock "Repository Setup"
-		exit 0
+	$inputPath = Read-Host $PromptText
+	$normalized = Convert-Directory $inputPath
+	if (-not $normalized) {
+		Write-Host "Invalid path."
+		return $null
 	}
+	return $normalized
 }
 
-# --- Username ---
-$username = Read-ValidatedInput "Please enter backup username" $USERNAME_REGEX
+function Read-ValidatedSecretFilePath {
+	param([string]$PromptText = "Enter secret file path")
 
-# --- Repo type ---
-Write-Host "`nSelect restic repository type:"
-Write-Host "1) local"
-Write-Host "2) sftp"
+	$inputPath = Read-Host $PromptText
+	if (-not $inputPath.EndsWith(".secret")) {
+		Write-Host "File must end with .secret"
+		return $null
+	}
+
+	$validated = $null
+	if (Get-Command Convert-FilePath -ErrorAction SilentlyContinue) {
+		$validated = Convert-FilePath $inputPath
+	}
+ else {
+		$validated = Convert-FileName (Split-Path $inputPath -Leaf)
+		if ($validated) {
+			$dir = Split-Path $inputPath -Parent
+			$validated = (Join-Path $dir $validated)
+		}
+	}
+
+	if (-not $validated) {
+		Write-Host "Invalid secret file path."
+		return $null
+	}
+	return $validated
+}
+
+# --- Repo-Einstellungen: LOCAL ---
+function Set-RepoConfigLocal {
+	param([hashtable]$ConfigVars)
+
+	$normalized = Read-ValidatedPath -PromptText "Enter local repository path"
+	if ($normalized) {
+		$ConfigVars[$CONFIG_KEY_REPO_TYPE] = "local"
+		$ConfigVars[$CONFIG_KEY_REPO_DIR] = $normalized
+	}
+	return $ConfigVars
+}
+
+# --- Repo-Einstellungen: SFTP ---
+function Set-RepoConfigSftp {
+	param([hashtable]$ConfigVars)
+
+	$user = Read-Host "Enter SFTP username"
+	$password = Read-Host "Enter SFTP password"
+	$sftpHost = Read-Host "Enter SFTP host (e.g. example.com)"
+	$normalized = Read-ValidatedPath -PromptText "Enter SFTP repository path (e.g. /backups/projectA)"
+
+	if ($normalized) {
+		$ConfigVars[$CONFIG_KEY_REPO_TYPE] = "sftp"
+		$ConfigVars[$CONFIG_KEY_REPO_DIR] = "${user}:${password}@${sftpHost}:${normalized}"
+	}
+	return $ConfigVars
+}
+
+# --- Passwortdatei ---
+function Set-PasswordFile {
+	param([hashtable]$ConfigVars)
+
+	Write-Host ""
+	Write-Host "Password file options:"
+	Write-Host "1) Create new secret file"
+	Write-Host "2) Enter existing secret file"
+	$choice = Read-Host "Enter number"
+
+	switch ($choice) {
+		"1" {
+			$baseName = Read-Host "Enter base name (e.g. restic_username)"
+			if ([string]::IsNullOrWhiteSpace($baseName)) {
+				Write-Host "Invalid base name."
+				return $ConfigVars
+			}
+
+			$fileName = "$baseName.secret"
+			$validated = Convert-FileName $fileName
+			if (-not $validated) {
+				Write-Host "Invalid secret file name."
+				return $ConfigVars
+			}
+
+			$ConfigVars[$CONFIG_KEY_PASSWORD_FILE] = $validated
+			& (Join-Path $SCRIPTS_DIR "generate-password.ps1") -Filename $validated -ByteSize 1024
+		}
+		"2" {
+			$secretPath = Read-ValidatedSecretFilePath -PromptText "Enter existing secret file path (ending with .secret)"
+			if ($secretPath) {
+				$ConfigVars[$CONFIG_KEY_PASSWORD_FILE] = $secretPath
+			}
+		}
+		default {
+			Write-Host "Invalid choice."
+		}
+	}
+
+	return $ConfigVars
+}
+
+# --- Menüs ---
+$configVars = Get-RepoConfig -ConfigFile $ConfigFile
+
+function Show-EditMenu {
+	Write-Host ""
+	Write-Host "=== Edit repository settings ==="
+	Write-Host "1) Change repository settings"
+	Write-Host "2) Change password file"
+	Write-Host "3) Save and exit"
+	Write-Host "4) Cancel"
+}
+
+function Show-RepoTypeMenu {
+	Write-Host ""
+	Write-Host "=== Select repository type ==="
+	Write-Host "1) Local repository"
+	Write-Host "2) SFTP repository"
+}
+
 do {
-	$repoChoice = Read-Host "Enter number"
-} until ($repoChoice -in @("1", "2"))
+	Show-EditMenu
+	$choice = Read-Host "Enter number"
 
-Write-Host "`nNote: The structure 'username/backup/...' will be appended automatically."
-
-if ($repoChoice -eq "1") {
-	$repoType = "local"
-	$baseDir = Read-ValidatedInput "Enter base directory" $PATH_REGEX
-}
-elseif ($repoChoice -eq "2") {
-	$repoType = "sftp"
-	$sftpUser = Read-Host "Enter SFTP username"
-	$sftpHost = Read-Host "Enter SFTP host"
-	$remoteBase = Read-ValidatedInput "Enter remote base directory" $PATH_REGEX
-	$baseDir = "${sftpUser}@${sftpHost}:${remoteBase}"
-}
-
-# --- Normalize repo path ---
-if ([string]::IsNullOrWhiteSpace($baseDir)) {
-	$repoPath = ""
-}
-else {
-	$repoPath = ($baseDir -replace '\\', '/') -replace '/+$', ''
-	$repoPath = "$repoPath/"
-}
-
-# --- Password handling ---
-Write-LogLine "Setting up repository password..."
-$secretFile = "restic_$username"
-
-if (Test-Path (Join-Path $SECRETS_DIR "$secretFile.secret")) {
-	Write-LogLine "Warning: Password file already exists."
-	Write-LogLine "Warning: If you overwrite it, repos encrypted with the old password will be UNREADABLE."
-	if (Ask-YesNo "Overwrite password file") {
-		Remove-Item (Join-Path $SECRETS_DIR "$secretFile.secret") -Force
-		& $SCRIPT_GENERATE_PASS $secretFile
-		if ($LASTEXITCODE -ne 0) {
-			Stop-LogBlock "Repository Setup"
-			exit $LASTEXITCODE
+	switch ($choice) {
+		"1" {
+			Show-RepoTypeMenu
+			$typeChoice = Read-Host "Enter number"
+			switch ($typeChoice) {
+				"1" { $configVars = Set-RepoConfigLocal -ConfigVars $configVars }
+				"2" { $configVars = Set-RepoConfigSftp  -ConfigVars $configVars }
+				default { Write-Host "Invalid choice." }
+			}
 		}
+		"2" { $configVars = Set-PasswordFile -ConfigVars $configVars }
+		"3" {
+			if (Test-RepoConfigValidity -ConfigVars $configVars) {
+				New-RepoConfigFromTemplate -TemplateFile $TemplateFile -OutputFile $ConfigFile -ConfigVars $configVars
+				Write-Host "Configuration saved to $ConfigFile"
+			}
+			else {
+				Write-Host "Configuration invalid. Please fix missing or empty values."
+			}
+			break
+		}
+		"4" {
+			Write-Host "Cancelled. No changes saved."
+			break
+		}
+		default { Write-Host "Invalid choice." }
 	}
-	else {
-		Write-LogLine "Keeping existing password file."
-	}
-}
-else {
-	& $SCRIPT_GENERATE_PASS $secretFile
-	if ($LASTEXITCODE -ne 0) {
-		Stop-LogBlock "Repository Setup"
-		exit $LASTEXITCODE
-	}
-}
-
-# --- Create configuration ---
-Write-LogLine "Creating repository configuration..."
-$configContent = Get-Content $templatePath -Raw
-$configContent = $configContent -replace [regex]::Escape($PLACEHOLDER_USER), $username
-$configContent = $configContent -replace [regex]::Escape($PLACEHOLDER_TYPE), $repoType
-$configContent = $configContent -replace [regex]::Escape($PLACEHOLDER_DIR), $repoPath
-
-$destDir = Split-Path $profilePath
-if (-not (Test-Path $destDir)) {
-	New-Item -ItemType Directory -Path $destDir | Out-Null
-}
-$configContent | Set-Content $profilePath
-Write-LogLine "Configuration saved to: $profilePath."
-
-Write-LogLine "Setup completed successfully."
-
-# --- Run full backup? ---
-if (Ask-YesNo "Do you want to run a full backup now") {
-	& $SCRIPT_RUN_BACKUP
-	if ($LASTEXITCODE -ne 0) {
-		Stop-LogBlock "Repository Setup"
-		exit $LASTEXITCODE
-	}
-}
-
-Stop-LogBlock "Repository Setup"
-exit 0
+} until ($choice -eq "3" -or $choice -eq "4")
