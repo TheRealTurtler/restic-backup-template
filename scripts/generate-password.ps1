@@ -32,6 +32,7 @@ function New-PasswordFile {
 		New-Item -ItemType Directory -Path $SECRETS_DIR | Out-Null
 	}
 
+	Start-LogBlock "Password Generation"
 	Write-LogLine "Generating password..."
 
 	# Create cryptographically secure random byte array
@@ -51,22 +52,26 @@ function New-PasswordFile {
 }
 
 # === Main execution block ===
-Start-LogBlock "Password Generation"
-
 if ($ByteSize -lt 1) {
 	Write-LogLine "Error: Byte size must be at least 1."
-	Stop-LogBlock "Password Generation"
 	exit 1
 }
 
 $OutFile = Join-Path $SECRETS_DIR $Filename
 
-if (-not (Test-PasswordFileExists -OutFile $OutFile)) {
-	New-PasswordFile -OutFile $OutFile -ByteSize $ByteSize
-	Stop-LogBlock "Password Generation"
-	exit 0
+if (Test-PasswordFileExists -OutFile $OutFile) {
+	Write-Host ""
+	Write-Host "WARNING: A password file with this name already exists:"
+	Write-Host "         $OutFile"
+	Write-Host ""
+	Write-Host "Overwriting this file will make any existing repository permanently inaccessible."
+	Write-Host ""
+	$confirm = Read-Host "Do you want to overwrite the existing file? (yes/no)"
+	if ($confirm -ne "yes") {
+		Write-LogLine "Aborted: Existing password file was not overwritten."
+		exit 1
+	}
 }
-else {
-	Stop-LogBlock "Password Generation"
-	exit 1
-}
+
+New-PasswordFile -OutFile $OutFile -ByteSize $ByteSize
+exit 0

@@ -7,6 +7,8 @@ Import-Module (Join-Path $SCRIPTS_MODULES_DIR "PathValidation.psm1") -Force
 
 # === Load repo config functions ===
 $SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"
+$SCRIPT_GENERATE_PASSWORD = Join-Path $SCRIPTS_DIR "generate-password.ps1"
+
 . $SCRIPT_REPO_CONFIG
 
 # === Define config keys ===
@@ -100,7 +102,7 @@ function Set-PasswordFile {
 			}
 
 			$ConfigVars[$CONFIG_KEY_PASSWORD_FILE] = $validated
-			& (Join-Path $SCRIPTS_DIR "generate-password.ps1") -Filename $validated -ByteSize 1024
+			& $SCRIPT_GENERATE_PASSWORD -Filename $validated -ByteSize 1024
 		}
 		"2" {
 			$secretPath = Read-ValidatedSecretFilePath -PromptText "Enter existing secret file path (ending with .secret)"
@@ -117,7 +119,7 @@ function Set-PasswordFile {
 }
 
 # === Interactive wizard for initial repository setup ===
-function Run-RepoWizard {
+function Start-RepoWizard {
 	param([hashtable]$ConfigVars)
 
 	Write-Host ""
@@ -205,7 +207,7 @@ function Initialize-RepoConfig {
 
 	if (-not (Test-RepoConfigValidity -ConfigVars $configVars -RequiredKeys $REQUIRED_KEYS)) {
 		Write-Host "No valid repository configuration found. Starting setup wizard..."
-		$configVars = Run-RepoWizard -ConfigVars @{}
+		$configVars = Start-RepoWizard -ConfigVars @{}
 		if ($configVars -and (Test-RepoConfigValidity -ConfigVars $configVars -RequiredKeys $REQUIRED_KEYS)) {
 			New-RepoConfigFromTemplate -TemplateFile $TemplateFile -OutputFile $ConfigFile -ConfigVars $configVars
 			Write-Host "Configuration created via wizard."
