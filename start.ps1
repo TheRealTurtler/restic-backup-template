@@ -19,6 +19,8 @@ $SCRIPT_UPDATE_BINARIES = Join-Path $SCRIPTS_DIR "update-binaries.ps1"
 $ProfileConfigFile = Join-Path $CONF_PROFILES_DIR  "01_default_repo.yaml"
 $TemplateConfigFile = Join-Path $CONF_TEMPLATES_DIR "01_default_repo.yaml"
 
+$DefaultRepoProfile = "userdata"
+
 # === Initialize required tools/binaries ===
 Initialize-AllTools
 
@@ -50,7 +52,10 @@ do {
 			& $SCRIPT_RUN_BACKUP
 		}
 		"2" {
-			& $SCRIPT_OPEN_BROWSER
+			$repoPath = "$($configVars["REPO_TYPE"]):$($configVars["REPO_DIR"])$($DefaultRepoProfile)"
+			$passwordFile = Join-Path $SECRETS_DIR $configVars["PASSWORD_FILE"]
+
+			& $SCRIPT_OPEN_BROWSER -RepoPath $repoPath -PasswordFile $passwordFile
 		}
 		"3" {
 			Show-RepoConfigMenu -ConfigVars $configVars -TemplateFile $TemplateConfigFile -ConfigFile $ProfileConfigFile
