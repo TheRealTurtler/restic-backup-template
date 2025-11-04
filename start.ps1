@@ -16,7 +16,7 @@ $SCRIPT_UPDATE_BINARIES = Join-Path $SCRIPTS_DIR "update-binaries.ps1"
 . $SCRIPT_SETUP_REPO
 
 # === Central config/template files ===
-$ProfileConfigFile = Join-Path $CONF_PROFILES_DIR  "01_default_repo.yaml"
+$ProfileConfigFile = Join-Path $CONF_PROFILES_USER_DIR  "01_default_repo.yaml"
 $TemplateConfigFile = Join-Path $CONF_TEMPLATES_DIR "01_default_repo.yaml"
 
 # === Default settings ===

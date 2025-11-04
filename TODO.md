@@ -1,0 +1,4 @@
+- Fix command hook scripts
+- Add automatic email on backup failure
+- Add log file entries for failed commands
+- Configure and test schedules

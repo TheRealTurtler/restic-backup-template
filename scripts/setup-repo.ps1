@@ -5,10 +5,11 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\constants.ps1"
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "PathValidation.psm1") -Force
 
-# === Load repo config functions ===
+# === Script paths ===
 $SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"
 $SCRIPT_GENERATE_PASSWORD = Join-Path $SCRIPTS_DIR "generate-password.ps1"
 
+# === Load repo config functions ===
 . $SCRIPT_REPO_CONFIG
 
 # === Define config keys ===
@@ -21,6 +22,29 @@ $REQUIRED_KEYS = @(
 	$CONFIG_KEY_REPO_DIR,
 	$CONFIG_KEY_PASSWORD_FILE
 )
+
+# === Profile template files to copy ===
+$PROFILE_TEMPLATE_FILES = @(
+	"userdata.yaml",
+	"test.yaml",
+	"zz_groups.yaml"
+)
+
+# === Copy profile templates with optional overwrite ===
+function Copy-ProfileTemplates {
+	param([bool]$Force = $false)
+
+	foreach ($file in $PROFILE_TEMPLATE_FILES) {
+		$source = Join-Path $CONF_TEMPLATES_DIR $file
+		$target = Join-Path $CONF_PROFILES_USER_DIR $file
+
+		if ($Force -or -not (Test-Path $target)) {
+			Copy-Item -Path $source -Destination $target -Force
+			$action = if ($Force) { "Overwritten" } else { "Copied" }
+			Write-Host ("{0}: {1}" -f $action, $file)
+		}
+	}
+}
 
 # === Prompt user for and normalize a directory path ===
 function Read-ValidatedPath {
@@ -142,6 +166,10 @@ function Start-RepoWizard {
 	}
 
 	$ConfigVars = Set-PasswordFile -ConfigVars $ConfigVars
+
+	# Copy profile templates after setup
+	Copy-ProfileTemplates -Force $false
+
 	return $ConfigVars
 }
 
@@ -151,8 +179,9 @@ function Show-EditMenu {
 	Write-Host "=== Edit repository settings ==="
 	Write-Host "1) Change repository settings"
 	Write-Host "2) Change password file"
-	Write-Host "3) Save and exit"
-	Write-Host "4) Cancel"
+	Write-Host "3) Update profile files"
+	Write-Host "4) Save and exit"
+	Write-Host "5) Cancel"
 }
 
 function Show-RepoConfigMenu {
@@ -183,6 +212,17 @@ function Show-RepoConfigMenu {
 				$ConfigVars = Set-PasswordFile -ConfigVars $ConfigVars
 			}
 			"3" {
+				Write-Host ""
+				Write-Host "WARNING: This will overwrite existing profile files in profiles_user.d"
+				$confirm = Read-Host "Do you want to overwrite the existing files? (yes/no)"
+				if ($confirm -eq "yes") {
+					Copy-ProfileTemplates -Force $true
+				}
+				else {
+					Write-Host "Update cancelled."
+				}
+			}
+			"4" {
 				if (Test-RepoConfigValidity -ConfigVars $ConfigVars -RequiredKeys $REQUIRED_KEYS) {
 					New-RepoConfigFromTemplate -TemplateFile $TemplateFile -OutputFile $ConfigFile -ConfigVars $ConfigVars
 					Write-Host "Configuration saved to $ConfigFile"
@@ -192,7 +232,7 @@ function Show-RepoConfigMenu {
 				}
 				break
 			}
-			"4" {
+			"5" {
 				Write-Host "Cancelled. No changes saved."
 				break
 			}
