@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 
 # === Load constants and modules ===
 . "$PSScriptRoot\constants.ps1"
-Import-Module (Join-Path $SCRIPTS_MODULES_DIR "PathValidation.psm1") -Force
+Import-Module (Join-Path $SCRIPTS_MODULES_DIR "PathValidation.psm1")
 
 # === Script paths ===
 $SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"

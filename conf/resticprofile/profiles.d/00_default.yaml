@@ -14,16 +14,15 @@ default:
   # Set cache directory
   cache-dir: "{{ .ConfigDir }}/../cache"
 
-  # Print error summary when any command fails
+  # Command hooks
+  run-before:
+    - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File run-before.ps1
+  run-after:
+    - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File run-after.ps1
   run-after-fail:
-    - >
-      powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/command-hooks/backup_run-after-fail.ps1
-      {{ .Hostname }}
-      {{ .OS }}
-      {{ .Arch }}
-      {{ .CurrentDir }}
-      {{ .BinaryDir }}
-      {{ .ConfigDir }}
+    - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File run-after-fail.ps1
+  run-finally:
+    - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File run-finally.ps1
 
   # Backup command
   backup:
@@ -44,16 +43,15 @@ default:
     # Check repository after succesfull backup
     check-after: true
 
-    # Send e-mail when backup fails
+    # Command hooks
+    run-before:
+      - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File ${PROFILE_COMMAND}/run-before.ps1
+    run-after:
+      - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File ${PROFILE_COMMAND}/run-after.ps1
     run-after-fail:
-      - >
-        powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/command-hooks/backup_run-after-fail.ps1
-        {{ .Hostname }}
-        {{ .OS }}
-        {{ .Arch }}
-        {{ .CurrentDir }}
-        {{ .BinaryDir }}
-        {{ .ConfigDir }}
+      - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File ${PROFILE_COMMAND}/run-after-fail.ps1
+    run-finally:
+      - cd {{ .ConfigDir }}/../scripts/command-hooks && powershell -ExecutionPolicy Bypass -File ${PROFILE_COMMAND}/run-finally.ps1
 
   # Check command
   check:

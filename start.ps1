@@ -37,7 +37,7 @@ if (-not $configVars) {
 function Show-MainMenu {
 	Write-Host ""
 	Write-Host "=== Backup Menu ==="
-	Write-Host "1) Run backup"
+	Write-Host "1) Restic operations"
 	Write-Host "2) Open backup browser"
 	Write-Host "3) Change repository settings"
 	Write-Host "4) Show current repository config"

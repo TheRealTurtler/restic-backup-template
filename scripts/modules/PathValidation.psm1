@@ -1,6 +1,3 @@
-#requires -version 5.1
-$ErrorActionPreference = 'Stop'
-
 # === Normalize directory path ===
 # Converts backslashes to forward slashes, collapses duplicates, and ensures trailing slash
 function Convert-Directory {
