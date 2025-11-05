@@ -4,6 +4,7 @@ $ErrorActionPreference = 'Stop'
 # === Load constants and modules ===
 . "$PSScriptRoot\constants.ps1"
 Import-Module (Join-Path $SCRIPTS_MODULES_DIR "PathValidation.psm1")
+Import-Module (Join-Path $SCRIPTS_MODULES_DIR "EmailSettings.psm1")
 
 # === Script paths ===
 $SCRIPT_REPO_CONFIG = Join-Path $SCRIPTS_DIR "repo-config.ps1"
@@ -22,6 +23,9 @@ $REQUIRED_KEYS = @(
 	$CONFIG_KEY_REPO_DIR,
 	$CONFIG_KEY_PASSWORD_FILE
 )
+
+# === Email settings file path ===
+$EMAIL_SETTINGS_PATH = Join-Path $SECRETS_DIR "email.secret"
 
 # === Profile template files to copy ===
 $PROFILE_TEMPLATE_FILES = @(
@@ -149,6 +153,59 @@ function Set-PasswordFile {
 	return $ConfigVars
 }
 
+# === Configure email settings ===
+function Set-EmailSettings {
+	param (
+		[string]$SettingsPath
+	)
+
+	Write-Host ""
+	Write-Host "=== Configure email settings ==="
+
+	$from = Read-Host "Enter sender address (From)"
+	$to = Read-Host "Enter recipient address (To)"
+	$smtpServer = Read-Host "Enter SMTP server (e.g. smtp.gmail.com)"
+	$portRaw = Read-Host "Enter SMTP port (e.g. 587)"
+	$securePwd = Read-Host "Enter app password" -AsSecureString
+
+	if (-not ($portRaw -as [int])) {
+		Write-Host "Invalid port number."
+		return
+	}
+
+	Export-EmailSettings -Path $SettingsPath `
+		-From $from -To $to -SmtpServer $smtpServer -Port ([int]$portRaw) -SecurePassword $securePwd
+
+	Write-Host "Email settings saved to $SettingsPath"
+}
+
+# === Send test email ===
+function Send-TestEmail {
+	param (
+		[string]$SettingsPath
+	)
+
+	if (-not (Test-Path $SettingsPath)) {
+		Write-Host "No email.secret file found. Cannot send test email."
+		return
+	}
+
+	try {
+		$email = Get-EmailSettings -Path $SettingsPath
+
+		Send-MailMessage -From $email.From -To $email.To `
+			-Subject "ResticProfile Test" `
+			-Body "Congratulations, your email configuration is working." `
+			-SmtpServer $email.SmtpServer -Port $email.Port `
+			-UseSsl -Credential $email.Credential
+
+		Write-Host "Test email sent to $($email.To)"
+	}
+	catch {
+		Write-Host "Test email failed: $($_.Exception.Message)"
+	}
+}
+
 # === Interactive wizard for initial repository setup ===
 function Start-RepoWizard {
 	param([hashtable]$ConfigVars)
@@ -167,12 +224,17 @@ function Start-RepoWizard {
 
 	$ConfigVars = Set-PasswordFile -ConfigVars $ConfigVars
 
-	# Copy profile templates after setup
+	$emailChoice = Read-Host "Do you want to configure email settings now? (yes/no)"
+	if ($emailChoice -eq "yes") {
+		Set-EmailSettings -SettingsPath $EMAIL_SETTINGS_PATH
+	}
+
 	Copy-ProfileTemplates -Force $false
 
 	return $ConfigVars
 }
 
+# === Menu for editing existing repository configuration ===
 # === Menu for editing existing repository configuration ===
 function Show-EditMenu {
 	Write-Host ""
@@ -180,8 +242,10 @@ function Show-EditMenu {
 	Write-Host "1) Change repository settings"
 	Write-Host "2) Change password file"
 	Write-Host "3) Update profile files"
-	Write-Host "4) Save and exit"
-	Write-Host "5) Cancel"
+	Write-Host "4) Change email settings"
+	Write-Host "5) Send test email"
+	Write-Host "6) Save and exit"
+	Write-Host "7) Cancel"
 }
 
 function Show-RepoConfigMenu {
@@ -227,6 +291,12 @@ function Show-RepoConfigMenu {
 				}
 			}
 			"4" {
+				Set-EmailSettings -SettingsPath $EMAIL_SETTINGS_PATH
+			}
+			"5" {
+				Send-TestEmail -SettingsPath $EMAIL_SETTINGS_PATH
+			}
+			"6" {
 				if (Test-RepoConfigValidity -ConfigVars $ConfigVars -RequiredKeys $REQUIRED_KEYS) {
 					New-RepoConfigFromTemplate -TemplateFile $TemplateFile -OutputFile $ConfigFile -ConfigVars $ConfigVars
 					Write-Host "Configuration saved to $ConfigFile"
@@ -236,7 +306,7 @@ function Show-RepoConfigMenu {
 				}
 				break
 			}
-			"5" {
+			"7" {
 				Write-Host "Cancelled. No changes saved."
 				break
 			}
@@ -244,7 +314,7 @@ function Show-RepoConfigMenu {
 				Write-Host "Invalid choice."
 			}
 		}
-	} until ($choice -eq "3" -or $choice -eq "4")
+	} until ($choice -eq "6" -or $choice -eq "7")
 }
 
 # === Load or initialize repository config ===

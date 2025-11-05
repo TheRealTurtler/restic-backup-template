@@ -96,6 +96,92 @@ function Format-ResticFailureReport {
 	) -join "`n"
 }
 
+# === Format HTML failure report ===
+# Generates a styled HTML report for ResticProfile failures.
+# Combines system info and context into tables and <pre> blocks for email delivery.
+function Format-ResticFailureReportHtml {
+	param (
+		[hashtable]$SystemInfo,
+		[hashtable]$Context
+	)
+
+	return @"
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Consolas, monospace;
+      background-color: #ffffff;
+      color: #000000;
+    }
+    h2 {
+      background-color: #c0392b;
+      color: white;
+      padding: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+      margin-bottom: 20px;
+    }
+    th, td {
+      width: 50%;
+      padding: 6px;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+    pre {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ddd;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+<h2>ResticProfile FAILURE [$($Context.Timestamp)]</h2>
+
+<table>
+  <thead><tr><th colspan="2">System Information</th></tr></thead>
+  <tbody>
+    <tr><td>Hostname</td><td>$($SystemInfo.Hostname)</td></tr>
+    <tr><td>OS</td><td>$($SystemInfo.OS)</td></tr>
+    <tr><td>Architecture</td><td>$($SystemInfo.Architecture)</td></tr>
+    <tr><td>Update Version</td><td>$($SystemInfo.UpdateVersion)</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th colspan="2">ResticProfile Context</th></tr></thead>
+  <tbody>
+    <tr><td>Profile</td><td>$($Context.ProfileName)</td></tr>
+    <tr><td>Command</td><td>$($Context.Command)</td></tr>
+    <tr><td>Exit Code</td><td>$($Context.ExitCode)</td></tr>
+  </tbody>
+</table>
+
+<h3>Error Message</h3>
+<pre>$($Context.ErrorMessage)</pre>
+
+<h3>Command Line</h3>
+<pre>$($Context.CommandLine)</pre>
+
+<h3>STDERR Output</h3>
+<pre>$($Context.StderrOutput)</pre>
+
+</body>
+</html>
+"@
+}
+
 # === Write report to log file ===
 # Appends a given report string to the log file for the current profile/command
 function Write-ResticLog {
