@@ -213,8 +213,12 @@ function Show-RepoConfigMenu {
 			}
 			"3" {
 				Write-Host ""
-				Write-Host "WARNING: This will overwrite existing profile files in profiles_user.d"
-				$confirm = Read-Host "Do you want to overwrite the existing files? (yes/no)"
+				Write-Host "WARNING: This will overwrite the following profile files in profiles_user.d:"
+				foreach ($file in $PROFILE_TEMPLATE_FILES) {
+					Write-Host ("  - {0}" -f $file)
+				}
+
+				$confirm = Read-Host "Do you want to overwrite these files? (yes/no)"
 				if ($confirm -eq "yes") {
 					Copy-ProfileTemplates -Force $true
 				}
