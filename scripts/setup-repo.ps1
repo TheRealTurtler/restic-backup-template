@@ -244,7 +244,7 @@ function Show-EditMenu {
 	Write-Host "3) Update profile files"
 	Write-Host "4) Change email settings"
 	Write-Host "5) Send test email"
-	Write-Host "6) Save and exit"
+	Write-Host "6) Save and back to main menu"
 	Write-Host "7) Cancel"
 }
 

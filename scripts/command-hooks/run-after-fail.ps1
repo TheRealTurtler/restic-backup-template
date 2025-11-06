@@ -13,6 +13,8 @@ $Report = Format-ResticFailureReport -SystemInfo $SystemInfo -Context $Context
 Write-Host $Report
 
 # === Append to log file ===
-Write-ResticLog -Report $Report -Context $Context
+$LogFileName = Get-ResticLogFile -Context $Context
+$LogFilePath = (Join-Path $LOG_DIR $LogFileName)
+Write-ResticLog -Report $Report -LogFilePath $LogFilePath
 
 exit 0

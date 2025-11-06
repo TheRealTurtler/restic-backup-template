@@ -15,8 +15,15 @@ global:
   # Set lower priority, range: 0 (highest) - 7 (lowest)
   ionice-level: 6
 
-  # Resticprofile won't start a profile if there's less than 100MB of RAM available
+  # Resticprofile won't start a profile if there's less than this amount of RAM available [MB]
   min-memory: 100
+
+  # Restic binary path
+  restic-binary: "{{ .BinaryDir }}/restic.exe"
+
+  # Shell to use for resticprofile commands
+  # -> Has to be powershell, otherwise paths with spaces don't work correctly!
+  shell: "powershell"
 
   # Restic lock management (NOT resticprofile locks!)
   restic-stale-lock-age: "2h"

@@ -110,83 +110,62 @@ function Format-ResticFailureReportHtml {
 <html>
 <head>
   <meta charset="UTF-8">
-  <style>
-    body {
-      font-family: Consolas, monospace;
-      background-color: #ffffff;
-      color: #000000;
-    }
-    h2 {
-      background-color: #c0392b;
-      color: white;
-      padding: 10px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      table-layout: fixed;
-      margin-bottom: 20px;
-    }
-    th, td {
-      width: 50%;
-      padding: 6px;
-      border-bottom: 1px solid #ccc;
-      text-align: left;
-    }
-    th {
-      background-color: #f2f2f2;
-      font-weight: bold;
-    }
-    pre {
-      background-color: #f9f9f9;
-      padding: 10px;
-      border: 1px solid #ddd;
-      overflow-x: auto;
-    }
-  </style>
 </head>
-<body>
+<body style="font-family:Consolas, monospace; background-color:#ffffff; color:#000000;">
 
-<h2>ResticProfile FAILURE [$($Context.Timestamp)]</h2>
+<h2 style="background-color:#c0392b; color:#ffffff; padding:10px; margin:0;">
+  ResticProfile FAILURE [$($Context.Timestamp)]
+</h2>
 
-<table>
-  <thead><tr><th colspan="2">System Information</th></tr></thead>
+<table style="border-collapse:collapse; width:100%; table-layout:fixed; margin-bottom:20px;">
+  <thead>
+    <tr>
+      <th colspan="2" style="background-color:#f2f2f2; font-weight:bold; padding:6px; text-align:left; border-bottom:1px solid #ccc;">
+        System Information
+      </th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td>Hostname</td><td>$($SystemInfo.Hostname)</td></tr>
-    <tr><td>OS</td><td>$($SystemInfo.OS)</td></tr>
-    <tr><td>Architecture</td><td>$($SystemInfo.Architecture)</td></tr>
-    <tr><td>Update Version</td><td>$($SystemInfo.UpdateVersion)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">Hostname</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($SystemInfo.Hostname)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">OS</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($SystemInfo.OS)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">Architecture</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($SystemInfo.Architecture)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">Update Version</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($SystemInfo.UpdateVersion)</td></tr>
   </tbody>
 </table>
 
-<table>
-  <thead><tr><th colspan="2">ResticProfile Context</th></tr></thead>
+<table style="border-collapse:collapse; width:100%; table-layout:fixed; margin-bottom:20px;">
+  <thead>
+    <tr>
+      <th colspan="2" style="background-color:#f2f2f2; font-weight:bold; padding:6px; text-align:left; border-bottom:1px solid #ccc;">
+        ResticProfile Context
+      </th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td>Profile</td><td>$($Context.ProfileName)</td></tr>
-    <tr><td>Command</td><td>$($Context.Command)</td></tr>
-    <tr><td>Exit Code</td><td>$($Context.ExitCode)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">Profile</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($Context.ProfileName)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">Command</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($Context.Command)</td></tr>
+    <tr><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">Exit Code</td><td style="width:50%; padding:6px; border-bottom:1px solid #ccc;">$($Context.ExitCode)</td></tr>
   </tbody>
 </table>
 
-<h3>Error Message</h3>
-<pre>$($Context.ErrorMessage)</pre>
+<h3 style="margin:10px 0;">Error Message</h3>
+<pre style="background-color:#f9f9f9; padding:10px; border:1px solid #ddd; overflow-x:auto;">$($Context.ErrorMessage)</pre>
 
-<h3>Command Line</h3>
-<pre>$($Context.CommandLine)</pre>
+<h3 style="margin:10px 0;">Command Line</h3>
+<pre style="background-color:#f9f9f9; padding:10px; border:1px solid #ddd; overflow-x:auto;">$($Context.CommandLine)</pre>
 
-<h3>STDERR Output</h3>
-<pre>$($Context.StderrOutput)</pre>
+<h3 style="margin:10px 0;">STDERR Output</h3>
+<pre style="background-color:#f9f9f9; padding:10px; border:1px solid #ddd; overflow-x:auto;">$($Context.StderrOutput)</pre>
 
 </body>
 </html>
 "@
 }
 
-# === Write report to log file ===
-# Appends a given report string to the log file for the current profile/command
-function Write-ResticLog {
+# === Get log file name for profile/command ===
+# Returns the name of the log file based on the given context
+function Get-ResticLogFile {
 	param (
-		[string]$Report,
 		[hashtable]$Context
 	)
 
@@ -194,7 +173,17 @@ function Write-ResticLog {
 	$SafeProfile = ($Context.ProfileName -replace '[^\w\-]', '_')
 	$SafeCommand = ($Context.Command -replace '[^\w\-]', '_')
 	$LogFileName = "$SafeProfile" + "_" + "$SafeCommand" + ".log"
-	$LogFilePath = Join-Path $LOG_DIR $LogFileName
+
+	return $LogFileName
+}
+
+# === Write report to log file ===
+# Appends a given report string to the specified log file path
+function Write-ResticLog {
+	param (
+		[string]$Report,
+		[string]$LogFilePath
+	)
 
 	# Append report to log file using UTF8 without BOM
 	[System.IO.File]::AppendAllText(

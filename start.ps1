@@ -39,7 +39,7 @@ function Show-MainMenu {
 	Write-Host "=== Backup Menu ==="
 	Write-Host "1) Restic operations"
 	Write-Host "2) Open backup browser"
-	Write-Host "3) Change repository settings"
+	Write-Host "3) Change settings"
 	Write-Host "4) Show current repository config"
 	Write-Host "5) Update binaries"
 	Write-Host "6) Exit"
@@ -56,17 +56,62 @@ function Show-OperationMenu {
 	Write-Host " 5) prune       - Clean up unreferenced data"
 	Write-Host " 6) check       - Verify repository integrity"
 	Write-Host " 7) ls          - List files in snapshot"
-	Write-Host " 8) custom      - Manual input for operation"
-	Write-Host " 9) cancel      - Return to main menu"
+	Write-Host " 8) schedule    - Register scheduled backup task"
+	Write-Host " 9) unschedule  - Remove scheduled backup task"
+	Write-Host "10) custom      - Manual input for operation"
+	Write-Host "11) cancel      - Return to main menu"
 }
 
 # TODO: Add support for remaining commands
-#"8" { $profileOperation = "restore" }
-#"9" { $profileOperation = "dump" }
-#"10" { $profileOperation = "cat" }
-#"11" { $profileOperation = "diff" }
-#"12" { $profileOperation = "tag" }
-#"13" { $profileOperation = "mount" }
+#"XX" { $profileOperation = "restore" }
+#"XX" { $profileOperation = "dump" }
+#"XX" { $profileOperation = "cat" }
+#"XX" { $profileOperation = "diff" }
+#"XX" { $profileOperation = "tag" }
+#"XX" { $profileOperation = "mount" }
+
+# === Invoke run-backup.ps1 ===
+# Wrapper function to start run-backup.ps1 with or without elevation.
+function Invoke-RunBackup {
+	param(
+		[string]$ProfileName,
+		[string]$Operation,
+		[string[]]$ExtraArgs,
+		[bool]$RequireAdmin = $false
+	)
+
+	# Direct invocation if no elevation required
+	if (-not $RequireAdmin) {
+		if (-not $ExtraArgs) {
+			& $SCRIPT_RUN_BACKUP -ProfileName $ProfileName -Operation $Operation
+		}
+		else {
+			& $SCRIPT_RUN_BACKUP -ProfileName $ProfileName -Operation $Operation -ExtraArgs $ExtraArgs
+		}
+		return
+	}
+
+	# Build process start info
+	$psi = New-Object System.Diagnostics.ProcessStartInfo
+	$psi.FileName = "powershell.exe"
+
+	# Set working directory to script root
+	$psi.WorkingDirectory = $PSScriptRoot
+
+	# Construct arguments
+	$psi.Arguments = "-NoExit -ExecutionPolicy Bypass -File `"$SCRIPT_RUN_BACKUP`" -ProfileName `"$ProfileName`" -Operation `"$Operation`""
+	if ($ExtraArgs) {
+		$psi.Arguments += " -ExtraArgs " + ($ExtraArgs -join ' ')
+	}
+
+	# Elevation only if explicitly requested
+	if ($RequireAdmin) {
+		$psi.Verb = "runas"
+	}
+
+	# Start process
+	[System.Diagnostics.Process]::Start($psi) | Out-Null
+}
 
 # === Main loop ===
 do {
@@ -95,7 +140,9 @@ do {
 					"5" { $profileOperation = "prune" }
 					"6" { $profileOperation = "check" }
 					"7" { $profileOperation = "ls" }
-					"8" {
+					"8" { $profileOperation = "schedule" }
+					"9" { $profileOperation = "unschedule" }
+					"10" {
 						$customInput = Read-Host "Enter custom operation with arguments"
 						if ($customInput) {
 							$parts = $customInput -split '\s+', 2
@@ -105,28 +152,25 @@ do {
 							}
 						}
 					}
-					"9" { return }   # back to main menu
-					default {
-						Write-Host "Invalid choice."
-					}
+					"11" { break }   # back to main menu
+					default { Write-Host "Invalid choice." }
 				}
 			} until ($profileOperation)
 
-			# Optional snapshot ID for certain operations
-			if (-not $extraArgs -and $profileOperation -in @("restore", "ls", "dump", "cat", "diff", "tag", "mount")) {
-				$snapshot = Read-Host "Enter snapshot ID (default: $DefaultRepoSnapshot)"
-				if ([string]::IsNullOrWhiteSpace($snapshot)) {
-					$snapshot = $DefaultRepoSnapshot
+			if ($profileOperation) {
+				# Optional snapshot ID for certain operations
+				if (-not $extraArgs -and $profileOperation -in @("restore", "ls", "dump", "cat", "diff", "tag", "mount")) {
+					$snapshot = Read-Host "Enter snapshot ID (default: $DefaultRepoSnapshot)"
+					if ([string]::IsNullOrWhiteSpace($snapshot)) {
+						$snapshot = $DefaultRepoSnapshot
+					}
+					$extraArgs = @($snapshot)
 				}
-				$extraArgs = @($snapshot)
-			}
 
-			# Run backup script
-			if ($extraArgs) {
-				& $SCRIPT_RUN_BACKUP -ProfileName $profileName -Operation $profileOperation -ExtraArgs $extraArgs
-			}
-			else {
-				& $SCRIPT_RUN_BACKUP -ProfileName $profileName -Operation $profileOperation
+				$requireAdmin = $profileOperation -in @("schedule", "unschedule")
+
+				# Run backup script
+				Invoke-RunBackup -ProfileName $profileName -Operation $profileOperation -ExtraArgs $extraArgs -RequireAdmin $requireAdmin
 			}
 		}
 		"2" {

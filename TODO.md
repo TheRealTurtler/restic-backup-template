@@ -1,2 +1,5 @@
-- Add automatic email on backup failure
-- Configure and test schedules
+- Update READMEs
+- Test with other email providers (e.g. GMX)
+- Check schedules with SFTP repo
+- schedule / unscedule: cath if UAV prompt was denied
+- Remove -NoExit from schedule / unschedule commands
