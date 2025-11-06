@@ -99,7 +99,7 @@ function Invoke-RunBackup {
 	$psi.WorkingDirectory = $PSScriptRoot
 
 	# Construct arguments
-	$psi.Arguments = "-NoExit -ExecutionPolicy Bypass -File `"$SCRIPT_RUN_BACKUP`" -ProfileName `"$ProfileName`" -Operation `"$Operation`""
+	$psi.Arguments = "-ExecutionPolicy Bypass -File `"$SCRIPT_RUN_BACKUP`" -ProfileName `"$ProfileName`" -Operation `"$Operation`""
 	if ($ExtraArgs) {
 		$psi.Arguments += " -ExtraArgs " + ($ExtraArgs -join ' ')
 	}
@@ -109,8 +109,16 @@ function Invoke-RunBackup {
 		$psi.Verb = "runas"
 	}
 
-	# Start process
-	[System.Diagnostics.Process]::Start($psi) | Out-Null
+	# Try to start elevated process
+	try {
+		$process = [System.Diagnostics.Process]::Start($psi)
+		if (-not $process) {
+			Write-Warning "Execution was cancelled. UAC prompt may have been declined."
+		}
+	}
+	catch {
+		Write-Warning "Failed to start process with elevated privileges: $_"
+	}
 }
 
 # === Main loop ===
