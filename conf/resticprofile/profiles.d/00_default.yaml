@@ -33,7 +33,7 @@ default:
 
     # Schedule settings
     # -> To enable scheduled backups set interval with "schedule"
-    schedule-permission: "system"
+    schedule-permission: "user"
     schedule-priority: "background"
     schedule-log: "{{ .ConfigDir }}/../log/schedule_{{ .Profile.Name }}_backup.log"
     schedule-lock-mode: "default"
@@ -60,7 +60,7 @@ default:
 
     # Schedule settings
     # -> To enable scheduled backups set interval with "schedule"
-    schedule-permission: "system"
+    schedule-permission: "user"
     schedule-priority: "background"
     schedule-log: "{{ .ConfigDir }}/../log/schedule_{{ .Profile.Name }}_check.log"
     schedule-lock-mode: "default"

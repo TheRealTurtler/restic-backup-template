@@ -1,2 +1,1 @@
 - Update READMEs
-- Check schedules with SFTP repo
