@@ -19,9 +19,9 @@ test:
       - "{{ .Profile.Name }}"
       - "{{ .OS }}"
 
-    # Execute weekly
+    # Schedule
     # schedule: "weekly"
 
   check:
-    # Execute daily
+    # Schedule
     # schedule: "daily"

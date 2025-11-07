@@ -10,3 +10,7 @@ includes:
   - "../conf/resticprofile/profiles.d/*.toml"
   - "../conf/resticprofile/profiles.d/*.hcl"
   - "../conf/resticprofile/profiles.d/*.json"
+  - "../conf/resticprofile/profiles_user.d/*.yaml"
+  - "../conf/resticprofile/profiles_user.d/*.toml"
+  - "../conf/resticprofile/profiles_user.d/*.hcl"
+  - "../conf/resticprofile/profiles_user.d/*.json"

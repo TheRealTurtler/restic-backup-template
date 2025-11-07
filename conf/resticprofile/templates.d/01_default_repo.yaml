@@ -1,9 +1,9 @@
 # Declare Variables
-{{ $user_name     := "<<USER_NAME>>" }}
-{{ $repo_type     := "<<REPO_TYPE>>" }}
-{{ $repo_base_dir := "<<REPO_BASE_DIR>>" }}
+{{ $REPO_TYPE     := "<<REPO_TYPE>>" }}
+{{ $REPO_DIR := "<<REPO_DIR>>" }}
+{{ $PASSWORD_FILE := "<<PASSWORD_FILE>>" }}
 
 default:
   # Repository and password file
-  repository: "{{ $repo_type }}:{{ $repo_base_dir }}{{ $user_name }}/backup/{{ .Profile.Name }}"
-  password-file: "{{ .ConfigDir }}/../secrets/restic_{{ $user_name }}.secret"
+  repository: "{{ $REPO_TYPE }}:{{ $REPO_DIR }}{{ .Profile.Name }}"
+  password-file: "{{ .ConfigDir }}/../secrets/{{ $PASSWORD_FILE }}"

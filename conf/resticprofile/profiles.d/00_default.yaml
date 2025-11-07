@@ -14,16 +14,15 @@ default:
   # Set cache directory
   cache-dir: "{{ .ConfigDir }}/../cache"
 
-  # Print error summary when any command fails
+  # Command hooks
+  run-before:
+    - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-before.ps1'
+  run-after:
+    - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-after.ps1'
   run-after-fail:
-    - >
-      powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/profile_run-after-fail.ps1
-      {{ .Hostname }}
-      {{ .OS }}
-      {{ .Arch }}
-      {{ .CurrentDir }}
-      {{ .BinaryDir }}
-      {{ .ConfigDir }}
+    - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-after-fail.ps1'
+  run-finally:
+    - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-finally.ps1'
 
   # Backup command
   backup:
@@ -34,9 +33,9 @@ default:
 
     # Schedule settings
     # -> To enable scheduled backups set interval with "schedule"
-    schedule-permission: "system"
+    schedule-permission: "user"
     schedule-priority: "background"
-    schedule-log: "{{ .ConfigDir }}/../log/resticprofile/schedule_{{ .Profile.Name }}_backup.log"
+    schedule-log: "{{ .ConfigDir }}/../log/schedule_{{ .Profile.Name }}_backup.log"
     schedule-lock-mode: "default"
     schedule-lock-wait: "2h"
     schedule-after-network-online: true
@@ -44,16 +43,15 @@ default:
     # Check repository after succesfull backup
     check-after: true
 
-    # Send e-mail when backup fails
+    # Command hooks
+    run-before:
+      - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks/$Env:PROFILE_COMMAND" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-before.ps1'
+    run-after:
+      - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks/$Env:PROFILE_COMMAND" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-after.ps1'
     run-after-fail:
-      - >
-        powershell -ExecutionPolicy Bypass -File {{ .ConfigDir }}/../scripts/backup_run-after-fail.ps1
-        {{ .Hostname }}
-        {{ .OS }}
-        {{ .Arch }}
-        {{ .CurrentDir }}
-        {{ .BinaryDir }}
-        {{ .ConfigDir }}
+      - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks/$Env:PROFILE_COMMAND" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-after-fail.ps1'
+    run-finally:
+      - 'Set-Location "{{ .ConfigDir }}/../scripts/command-hooks/$Env:PROFILE_COMMAND" ; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass ; ./run-finally.ps1'
 
   # Check command
   check:
@@ -62,9 +60,9 @@ default:
 
     # Schedule settings
     # -> To enable scheduled backups set interval with "schedule"
-    schedule-permission: "system"
+    schedule-permission: "user"
     schedule-priority: "background"
-    schedule-log: "{{ .ConfigDir }}/../log/resticprofile/schedule_{{ .Profile.Name }}_check.log"
+    schedule-log: "{{ .ConfigDir }}/../log/schedule_{{ .Profile.Name }}_check.log"
     schedule-lock-mode: "default"
     schedule-lock-wait: "2h"
     schedule-after-network-online: true

@@ -15,6 +15,7 @@ $SECRETS_DIR = Join-Path $ROOT_DIR "secrets"
 # Subdirectories under conf
 $CONF_RESTICPROFILE_DIR = Join-Path $CONF_DIR "resticprofile"
 $CONF_PROFILES_DIR = Join-Path $CONF_RESTICPROFILE_DIR "profiles.d"
+$CONF_PROFILES_USER_DIR = Join-Path $CONF_RESTICPROFILE_DIR "profiles_user.d"
 $CONF_TEMPLATES_DIR = Join-Path $CONF_RESTICPROFILE_DIR "templates.d"
 
 # Subdirectories under scripts
