@@ -1,46 +1,24 @@
 userdata:
   inherit: "default"
 
-  initialize: true
+  initialize: false
+
+  lock: "{{ .ConfigDir }}/../lock/resticprofile_userdata.lock"
 
   backup:
     # Backup directories
     source:
-      - '{{ .Env.USERPROFILE }}\'
+      - '{{ .Env.USERPROFILE }}\.'
 
     # Excluded directories
     iexclude:
       # Usually we don't want to backup ourself
       - "{{ .ConfigDir }}/.."
 
-      # Let's be real, no one cleans the download folder
-      - '{{ .Env.USERPROFILE }}\Downloads'
-
-      # AppData contains a lot of volatile or redundant data
-      - '{{ .Env.USERPROFILE }}\AppData'
-
-      # Cloud storage folders are already synced externally
-      - '{{ .Env.USERPROFILE }}\Dropbox'
-      - '{{ .Env.USERPROFILE }}\Google Drive'
-      - '{{ .Env.USERPROFILE }}\Nextcloud'
-      - '{{ .Env.USERPROFILE }}\OneDrive'
-
-      # Common dotfolders that contain caches, build artifacts, or redundant config
-      # These are excluded explicitly to avoid losing .ssh or other critical folders
-      - '{{ .Env.USERPROFILE }}\.cache'
-      - '{{ .Env.USERPROFILE }}\.vscode'
-      - '{{ .Env.USERPROFILE }}\.platformio'
-      - '{{ .Env.USERPROFILE }}\.npm'
-      - '{{ .Env.USERPROFILE }}\.cargo'
-      - '{{ .Env.USERPROFILE }}\.conda'
-      - '{{ .Env.USERPROFILE }}\.jupyter'
-      - '{{ .Env.USERPROFILE }}\.matplotlib'
-      - '{{ .Env.USERPROFILE }}\.idea'
-      - '{{ .Env.USERPROFILE }}\.gradle'
-      - '{{ .Env.USERPROFILE }}\.terraform'
-      - '{{ .Env.USERPROFILE }}\.config'
-      - '{{ .Env.USERPROFILE }}\.local'
-      - '{{ .Env.USERPROFILE }}\.crossnote'
+    # Files containing exclude patterns (environment variables can be used here)
+    exclude-file:
+      - "{{ .ConfigDir }}/../conf/resticprofile/profiles_user.d/{{ .Profile.Name }}_exclude_default.txt"
+      - "{{ .ConfigDir }}/../conf/resticprofile/profiles_user.d/{{ .Profile.Name }}_exclude_custom.txt"
 
     # Tags
     tag:
@@ -48,8 +26,8 @@ userdata:
       - "{{ .OS }}"
 
     # Schedule
-    # schedule: "weekly"
+    schedule: "monthly"
 
   check:
     # Schedule
-    # schedule: "daily"
+    schedule: "weekly"

@@ -1,0 +1,10 @@
+desktop:
+  inherit: "userdata"
+
+  backup:
+    # Schedule
+    schedule: "weekly"
+
+  check:
+    # Schedule
+    schedule: "daily"

@@ -5,8 +5,9 @@ default:
   # Don't Initialize repository if missing
   initialize: false
 
+  # TODO
   # Lock-file
-  lock: "{{ .ConfigDir }}/../lock/resticprofile_{{ .Profile.Name }}.lock"
+  #lock: "{{ .ConfigDir }}/../lock/resticprofile_{{ .Profile.Name }}.lock"
   force-inactive-lock: true
 
   # Remove old cache directories
@@ -86,6 +87,8 @@ default:
 
     # Only delete snapshots from this host
     host: true
+    # Only delete snapshots with the same paths
+    paths: true
     # Only delete snapshots with tags specified in backup
     tags: true
 
@@ -107,6 +110,8 @@ default:
 
     # Only delete snapshots from this host
     host: true
+    # Only delete snapshots with the same paths
+    paths: true
     # Only delete snapshots with tags specified in backup
     tags: true
 
