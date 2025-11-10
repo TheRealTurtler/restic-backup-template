@@ -134,6 +134,8 @@ do {
 				$profileName = $DefaultRepoProfile
 			}
 
+			$backToMainMenu = $false
+
 			# Operation selection loop
 			$profileOperation = $null
 			do {
@@ -160,10 +162,14 @@ do {
 							}
 						}
 					}
-					"11" { break }   # back to main menu
+					"11" { $backToMainMenu = $true; }   # back to main menu
 					default { Write-Host "Invalid choice." }
 				}
-			} until ($profileOperation)
+			} until ($profileOperation -or $backToMainMenu)
+
+			if ($backToMainMenu) {
+				continue
+			}
 
 			if ($profileOperation) {
 				# Optional snapshot ID for certain operations
