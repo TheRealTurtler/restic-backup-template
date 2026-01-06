@@ -7,3 +7,4 @@
 	- Since this project focuses on backing up the user folder, the settigns should be stored in userdata_repo.yaml
 	- WARNING: lock-files need to be defined per repository
 	- pictures, documents, etc have to use the same lock file
+- Adjust restic-browser
