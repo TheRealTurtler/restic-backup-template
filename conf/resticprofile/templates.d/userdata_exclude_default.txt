@@ -1,0 +1,19 @@
+# Let's be real, no one cleans the download folder
+$USERPROFILE/Downloads
+
+# AppData contains a lot of volatile or redundant data
+$USERPROFILE/AppData
+
+# Cloud storage folders are already synced externally
+$USERPROFILE/Dropbox
+$USERPROFILE/Google Drive
+$USERPROFILE/Nextcloud
+$USERPROFILE/OneDrive
+
+# Common dotfolders that contain caches, build artifacts, or redundant config
+# These are excluded explicitly to avoid losing .ssh or other critical folders
+$USERPROFILE/.*
+!$USERPROFILE/.ssh
+
+$USERPROFILE/NTUSER*
+$USERPROFILE/ntuser*

@@ -1,3 +1,9 @@
 groups:
   full-backup:
+    - "desktop"
+    - "documents"
+    - "games"
+    - "music"
+    - "pictures"
     - "userdata"
+    - "videos"

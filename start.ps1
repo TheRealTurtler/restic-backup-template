@@ -50,16 +50,17 @@ function Show-OperationMenu {
 	Write-Host ""
 	Write-Host "=== Profile Operations ==="
 	Write-Host " 1) show        - Display profile configuration"
-	Write-Host " 2) backup      - Run backup for profile"
-	Write-Host " 3) snapshots   - List available snapshots"
-	Write-Host " 4) forget      - Remove snapshot references"
-	Write-Host " 5) prune       - Clean up unreferenced data"
-	Write-Host " 6) check       - Verify repository integrity"
-	Write-Host " 7) ls          - List files in snapshot"
-	Write-Host " 8) schedule    - Register scheduled backup task"
-	Write-Host " 9) unschedule  - Remove scheduled backup task"
-	Write-Host "10) custom      - Manual input for operation"
-	Write-Host "11) cancel      - Return to main menu"
+	Write-Host " 2) init        - Initialize repository for profile"
+	Write-Host " 3) backup      - Run backup for profile"
+	Write-Host " 4) snapshots   - List available snapshots"
+	Write-Host " 5) forget      - Remove snapshot references"
+	Write-Host " 6) prune       - Clean up unreferenced data"
+	Write-Host " 7) check       - Verify repository integrity"
+	Write-Host " 8) ls          - List files in snapshot"
+	Write-Host " 9) schedule    - Register scheduled backup task"
+	Write-Host "10) unschedule  - Remove scheduled backup task"
+	Write-Host "11) custom      - Manual input for operation"
+	Write-Host "12) cancel      - Return to main menu"
 }
 
 # TODO: Add support for remaining commands
@@ -144,15 +145,16 @@ do {
 
 				switch ($opChoice) {
 					"1" { $profileOperation = "show" }
-					"2" { $profileOperation = "backup" }
-					"3" { $profileOperation = "snapshots" }
-					"4" { $profileOperation = "forget" }
-					"5" { $profileOperation = "prune" }
-					"6" { $profileOperation = "check" }
-					"7" { $profileOperation = "ls" }
-					"8" { $profileOperation = "schedule" }
-					"9" { $profileOperation = "unschedule" }
-					"10" {
+					"2" { $profileOperation = "init" }
+					"3" { $profileOperation = "backup" }
+					"4" { $profileOperation = "snapshots" }
+					"5" { $profileOperation = "forget" }
+					"6" { $profileOperation = "prune" }
+					"7" { $profileOperation = "check" }
+					"8" { $profileOperation = "ls" }
+					"9" { $profileOperation = "schedule" }
+					"10" { $profileOperation = "unschedule" }
+					"11" {
 						$customInput = Read-Host "Enter custom operation with arguments"
 						if ($customInput) {
 							$parts = $customInput -split '\s+', 2
@@ -162,7 +164,7 @@ do {
 							}
 						}
 					}
-					"11" { $backToMainMenu = $true; }   # back to main menu
+					"12" { $backToMainMenu = $true; }
 					default { Write-Host "Invalid choice." }
 				}
 			} until ($profileOperation -or $backToMainMenu)

@@ -8,12 +8,13 @@ global:
   # Process priority
   priority: "low"
 
+  # TODO: Linux only
   # Disk I/O priority
-  ionice: true
+  #ionice: true
   # Class 1: realtime, 2: best-effort, 3: idle
-  ionice-class: 2
+  #ionice-class: 2
   # Set lower priority, range: 0 (highest) - 7 (lowest)
-  ionice-level: 6
+  #ionice-level: 6
 
   # Resticprofile won't start a profile if there's less than this amount of RAM available [MB]
   min-memory: 100

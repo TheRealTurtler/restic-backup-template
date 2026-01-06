@@ -20,8 +20,8 @@ test:
       - "{{ .OS }}"
 
     # Schedule
-    # schedule: "weekly"
+    schedule: "daily"
 
   check:
     # Schedule
-    # schedule: "daily"
+    schedule: "hourly"

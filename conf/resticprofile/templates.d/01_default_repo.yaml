@@ -5,5 +5,5 @@
 
 default:
   # Repository and password file
-  repository: "{{ $REPO_TYPE }}:{{ $REPO_DIR }}{{ .Profile.Name }}"
+  repository: "{{ $REPO_TYPE }}:{{ $REPO_DIR }}"
   password-file: "{{ .ConfigDir }}/../secrets/{{ $PASSWORD_FILE }}"

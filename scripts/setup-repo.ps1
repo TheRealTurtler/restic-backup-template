@@ -29,8 +29,21 @@ $EMAIL_SETTINGS_PATH = Join-Path $SECRETS_DIR "email.secret"
 
 # === Profile template files to copy ===
 $PROFILE_TEMPLATE_FILES = @(
-	"userdata.yaml",
+	"desktop.yaml",
+	"desktop_exclude_default.txt",
+	"documents.yaml",
+	"documents_exclude_default.txt",
+	"games.yaml",
+	"games_exclude_default.txt",
+	"music.yaml",
+	"music_exclude_default.txt",
+	"pictures.yaml",
+	"pictures_exclude_default.txt",
 	"test.yaml",
+	"userdata.yaml",
+	"userdata_exclude_default.txt",
+	"videos.yaml",
+	"videos_exclude_default.txt",
 	"zz_groups.yaml"
 )
 

@@ -1,1 +1,10 @@
 - Update READMEs
+- Automatically create *_exclude_custom.txt files
+	- Maybe restructure templates
+	- Maybe rename since these files are more or less used as include files
+- Repository settings should not necessarily contain {{ .Profile.Name }}
+	- pictures, documents etc. should all be stored in a single repository
+	- Since this project focuses on backing up the user folder, the settigns should be stored in userdata_repo.yaml
+	- WARNING: lock-files need to be defined per repository
+	- pictures, documents, etc have to use the same lock file
+- Adjust restic-browser
