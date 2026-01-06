@@ -56,8 +56,10 @@ default:
 
   # Check command
   check:
-    # Read data and not just metadata
-    read-data: true
+    # Read 10% of the data (randomly chosen) and not just metadata
+    # This reduces bandwith usage compared to a full check and is more thorough than the standard check
+    # Since check runs after each backup, this is a good compromise between speed and thoroughness
+    read-data-subset: "10%"
 
     # Schedule settings
     # -> To enable scheduled backups set interval with "schedule"
@@ -79,18 +81,20 @@ default:
     keep-tag:
       - "forever"
 
-    keep-daily: 1
     keep-hourly: 1
-    keep-weekly: 1
-    keep-monthly: 3
+    keep-daily: 7
+    keep-weekly: 4
+    keep-monthly: 6
     keep-within: "3h"
 
     # Only delete snapshots from this host
     host: true
     # Only delete snapshots with the same paths
-    paths: true
+    # This only considers the 'source' for the backup, not any excludes!
+    # NOTE: Does not work with \. in path!
+    path: false
     # Only delete snapshots with tags specified in backup
-    tags: true
+    tag: true
 
     # Automatically run "prune" if snapshots were removed
     prune: true
@@ -102,18 +106,20 @@ default:
     keep-tag:
       - "forever"
 
-    keep-daily: 1
     keep-hourly: 1
-    keep-weekly: 1
-    keep-monthly: 3
+    keep-daily: 7
+    keep-weekly: 4
+    keep-monthly: 6
     keep-within: "3h"
 
     # Only delete snapshots from this host
     host: true
     # Only delete snapshots with the same paths
-    paths: true
+    # This only considers the 'source' for the backup, not any excludes!
+    # NOTE: Does not work with \. in path
+    path: false
     # Only delete snapshots with tags specified in backup
-    tags: true
+    tag: true
 
     # Automatically run "prune" if snapshots were removed
     prune: true
