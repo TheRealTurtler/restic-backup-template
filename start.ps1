@@ -183,7 +183,10 @@ do {
 					$extraArgs = @($snapshot)
 				}
 
-				$requireAdmin = $profileOperation -in @("schedule", "unschedule")
+				# Determine if admin rights are required
+				# - All scheduling operations need admin rights to interact with Wondows Task Scheduler
+				# - Backup operation needs admin rights if VSS snapshots are used
+				$requireAdmin = $profileOperation -in @("schedule", "unschedule", "backup")
 
 				# Run backup script
 				Invoke-RunBackup -ProfileName $profileName -Operation $profileOperation -ExtraArgs $extraArgs -RequireAdmin $requireAdmin

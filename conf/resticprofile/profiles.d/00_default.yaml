@@ -11,7 +11,7 @@ default:
   force-inactive-lock: true
 
   # Remove old cache directories
-  cache-cleanup: true
+  cleanup-cache: true
   # Set cache directory
   cache-dir: "{{ .ConfigDir }}/../cache"
 
@@ -43,6 +43,9 @@ default:
 
     # Check repository after succesfull backup
     check-after: true
+
+    # Use filesystem snapshots (Windows only, VSS)
+    use-fs-snapshot: true
 
     # Command hooks
     run-before:
